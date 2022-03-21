@@ -1,4 +1,4 @@
-package de.otto.salesproduct.common.queue
+package channel
 
 import channel.ConsumerChannelProvider
 import com.rabbitmq.client.Channel
