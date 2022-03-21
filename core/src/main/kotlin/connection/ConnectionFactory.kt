@@ -3,10 +3,9 @@ package connection
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 
-abstract class ConnectionFactory {
-
-    protected val rabbitMQConnectionFactory: ConnectionFactory = ConnectionFactory()
-
+abstract class ConnectionFactory(
+    protected val rabbitMQConnectionFactory: ConnectionFactory
+) {
     var username: String
         get() = rabbitMQConnectionFactory.username
         set(value) {

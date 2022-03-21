@@ -3,7 +3,9 @@ package connection
 import com.rabbitmq.client.Connection
 import model.ConnectionCredentials
 
-class CachingConnectionFactory: ConnectionFactory() {
+class CachingConnectionFactory(
+    rabbitMQConnectionFactory: com.rabbitmq.client.ConnectionFactory = com.rabbitmq.client.ConnectionFactory()
+): ConnectionFactory(rabbitMQConnectionFactory) {
 
     private val connectionCache: MutableMap<ConnectionCredentials, Connection> = mutableMapOf()
 
