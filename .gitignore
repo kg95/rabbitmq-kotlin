@@ -1,0 +1,5 @@
+.gradle
+.idea
+build/
+core/build
+gradle.properties
