@@ -3,9 +3,9 @@ package converter
 import com.fasterxml.jackson.databind.ObjectMapper
 import exception.ConverterException
 
-class JacksonConverter: Converter {
-
-    private val objectMapper = ObjectMapper()
+class JacksonConverter(
+    private val objectMapper: ObjectMapper = ObjectMapper()
+): Converter {
 
     override fun <T> toByteArray(value: T, type: Class<T>): ByteArray {
         try {
