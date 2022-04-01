@@ -14,11 +14,13 @@ import model.Queue
 import model.RabbitMqAccess
 import util.getLogger
 import converter.Converter
+import kotlinx.coroutines.delay
 import java.time.Duration
 import javax.annotation.PreDestroy
 
 private const val CHANNEL_CAPACITY = 40000
 private const val DEFAULT_PREFETCH_COUNT = 5
+private const val WAIT_FOR_CHANNEL_TO_BE_READY_DELAY: Long = 5000
 
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
@@ -75,8 +77,13 @@ open class RabbitMQConsumer<T>(
             logger.info("Ack for outdated channel, dropping message")
             return
         }
-        channelProvider.waitUntilChannelIsReady()
-        if (!channelProvider.tryAck(pending.deliveryTag)) {
+        while (!channelProvider.channelIsOpen()) {
+            channelProvider.recreateChannel()
+            delay(WAIT_FOR_CHANNEL_TO_BE_READY_DELAY)
+        }
+        try {
+            channelProvider.tryAck(pending.deliveryTag)
+        } catch (e: Throwable) {
             logger.info("Try ack failed for tag: {} for value: {}", pending.deliveryTag, pending.value)
             withContext(channelIncrementContext) {
                 if (pending.channelVersion == channelVersion) {
@@ -92,8 +99,13 @@ open class RabbitMQConsumer<T>(
             logger.info("Nack for outdated channel, dropping message")
             return
         }
-        channelProvider.waitUntilChannelIsReady()
-        if (!channelProvider.tryNack(pending.deliveryTag)) {
+        while (!channelProvider.channelIsOpen()) {
+            channelProvider.recreateChannel()
+            delay(WAIT_FOR_CHANNEL_TO_BE_READY_DELAY)
+        }
+        try {
+            channelProvider.tryNack(pending.deliveryTag)
+        } catch (e: Throwable) {
             logger.info("Try nack failed for tag: {} for value: {}", pending.deliveryTag, pending.value)
             withContext(channelIncrementContext) {
                 if (pending.channelVersion == channelVersion) {

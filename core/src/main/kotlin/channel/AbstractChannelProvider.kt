@@ -14,8 +14,6 @@ abstract class AbstractChannelProvider(
     private val rabbitMqAccess: RabbitMqAccess,
     protected val queue: Queue,
 ) {
-    protected open val logger = getLogger(AbstractChannelProvider::class.java)
-
     protected lateinit var connection: Connection
     protected lateinit var channel: Channel
 

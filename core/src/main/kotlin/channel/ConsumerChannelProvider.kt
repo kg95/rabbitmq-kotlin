@@ -23,7 +23,6 @@ import util.getLogger
 import java.io.IOException
 import java.time.Duration
 
-private const val WAIT_FOR_CHANNEL_TO_BE_READY_DELAY: Long = 5000
 private const val RECONNECT_DELAY: Long = 5000
 private const val WATCH_DOG_INTERVAL = 5000L
 private const val MAX_PREFETCH_COUNT = 65000
@@ -37,7 +36,6 @@ class ConsumerChannelProvider(
     private val deliverCallback: DeliverCallback
 ): AbstractChannelProvider(connectionFactory, rabbitMqAccess, queue) {
 
-    override val logger: Logger = getLogger(ConsumerChannelProvider::class.java)
     private var watchDog: Job? = null
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())
 
@@ -50,11 +48,10 @@ class ConsumerChannelProvider(
     override fun createChannel(): Channel {
         return super.createChannel().apply {
             val cancelCallback = CancelCallback {
-                logger.error("channel got canceled")
                 closeChannel(this@apply)
             }
             val shutdownCallback = ConsumerShutdownSignalCallback { _, _ ->
-                logger.info("channel got shut down")
+                closeChannel(this@apply)
             }
             basicQos(MAX_PREFETCH_COUNT)
             basicConsume(queue.queueName, deliverCallback, cancelCallback, shutdownCallback)
@@ -66,10 +63,8 @@ class ConsumerChannelProvider(
             if(channel.isOpen) {
                 channel.close()
             }
-        } catch (e: IOException) {
-            logger.warn("Error closing channel: {}", e.message)
-        } catch (e: ShutdownSignalException) {
-            logger.info("Channel already shut down")
+        } catch (e: Throwable) {
+            return
         }
     }
 
@@ -80,7 +75,6 @@ class ConsumerChannelProvider(
         watchDog = watchDogScope.launch {
             while (isActive) {
                 delay(WATCH_DOG_INTERVAL)
-                logger.debug("Checking channel connectivity!")
                 withTimeoutOrNull(Duration.ofSeconds(CHANNEL_RENEW_TIMEOUT_SECONDS).toMillis()) {
                     tryRenew()
                 }
@@ -94,47 +88,28 @@ class ConsumerChannelProvider(
                 renewChannel()
             }
         } catch (e: Throwable) {
-            logger.warn("Renewing channel failed waiting {} seconds", RECONNECT_DELAY)
             delay(RECONNECT_DELAY)
         }
     }
 
     private fun renewChannel() {
-        logger.warn("Lost connection renewing it!")
         closeChannel(channel)
         channel = createChannel()
     }
 
-    suspend fun waitUntilChannelIsReady() {
-        while (!channel.isOpen) {
+    fun channelIsOpen() = channel.isOpen
+
+    fun recreateChannel() {
+        if(!channel.isOpen) {
             startWatchdog()
-            delay(WAIT_FOR_CHANNEL_TO_BE_READY_DELAY)
-            logger.debug("Channel is not ready, waiting for it!")
         }
     }
 
-    fun tryAck(deliveryTag: Long): Boolean {
-        return try {
-            channel.basicAck(deliveryTag, false)
-            true
-        } catch (e: Throwable) {
-            handleError("Ack", e)
-        }
-    }
+    fun tryAck(deliveryTag: Long) =
+        channel.basicAck(deliveryTag, false)
 
-    fun tryNack(deliveryTag: Long): Boolean {
-        return try {
-            channel.basicNack(deliveryTag, false, true)
-            true
-        } catch (e: Throwable) {
-            handleError("Nack", e)
-        }
-    }
-
-    private fun handleError(type: String, e: Throwable): Boolean {
-        logger.warn("Basic $type crashed: {}", e.message)
-        return false
-    }
+    fun tryNack(deliveryTag: Long) =
+        channel.basicNack(deliveryTag, false, true)
 
     override fun close() {
         watchDogScope.cancel()
