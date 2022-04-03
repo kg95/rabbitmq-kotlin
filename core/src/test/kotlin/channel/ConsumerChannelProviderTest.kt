@@ -10,6 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import model.Queue
 import model.RabbitMqAccess
@@ -18,6 +19,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
 
+@ExperimentalCoroutinesApi
 internal class ConsumerChannelProviderTest {
 
     private val connectionFactory: DefaultConnectionFactory = mockk(relaxed = true)
@@ -25,14 +27,16 @@ internal class ConsumerChannelProviderTest {
     private val testDelivery: DeliverCallback = mockk(relaxed = true)
     private val access: RabbitMqAccess = RabbitMqAccess("rabbitmq", "rabbitmq", "localhost", 5672)
     private val queue: Queue = Queue("test", "/")
+    private val testPrefetchCount: Int = 1000
 
     @Test
     fun testCreateChannel() {
         val channel = mockChannelSuccessful()
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
         channelProvider.close()
@@ -43,7 +47,7 @@ internal class ConsumerChannelProviderTest {
         mockChannelConnectionError()
         assertThrows<IOException> {
             ConsumerChannelProvider(
-                connectionFactory, access, queue, testDispatcher, testDelivery
+                connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
             )
         }
     }
@@ -53,9 +57,10 @@ internal class ConsumerChannelProviderTest {
         val channel = mockChannelSuccessful()
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -73,9 +78,10 @@ internal class ConsumerChannelProviderTest {
         val channel = mockChannelSuccessful()
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -97,9 +103,10 @@ internal class ConsumerChannelProviderTest {
         val channel = mockChannelSuccessful()
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -116,9 +123,10 @@ internal class ConsumerChannelProviderTest {
         val channel = mockChannelSuccessful()
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -143,10 +151,11 @@ internal class ConsumerChannelProviderTest {
         every { channel.isOpen } returns true
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
 
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -166,9 +175,10 @@ internal class ConsumerChannelProviderTest {
     fun testChannelIsOpen() {
         val channel = mockChannelSuccessful()
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -187,9 +197,10 @@ internal class ConsumerChannelProviderTest {
         every { channel.isOpen } returns true
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
 
@@ -213,9 +224,10 @@ internal class ConsumerChannelProviderTest {
         every { channel.isOpen } returns true
 
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), any())
         }
         channelProvider.close()
@@ -229,9 +241,10 @@ internal class ConsumerChannelProviderTest {
         val channel = mockChannelSuccessful()
         val shutdownCallback = slot<ConsumerShutdownSignalCallback>()
         ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, any(), capture(shutdownCallback))
         }
         assertThat(shutdownCallback.isCaptured).isTrue
@@ -243,9 +256,10 @@ internal class ConsumerChannelProviderTest {
         val channel = mockChannelSuccessful()
         val cancelCallback = slot<CancelCallback>()
         ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery
+            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            channel.basicQos(testPrefetchCount)
             channel.basicConsume(queue.queueName, testDelivery, capture(cancelCallback), any())
         }
         assertThat(cancelCallback.isCaptured).isTrue

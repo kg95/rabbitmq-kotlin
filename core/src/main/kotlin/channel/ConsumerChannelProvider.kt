@@ -4,7 +4,6 @@ import com.rabbitmq.client.CancelCallback
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.ConsumerShutdownSignalCallback
 import com.rabbitmq.client.DeliverCallback
-import com.rabbitmq.client.ShutdownSignalException
 import connection.ConnectionFactory
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -14,13 +13,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import model.Queue
 import model.RabbitMqAccess
-import org.slf4j.Logger
-import util.getLogger
-import java.io.IOException
 import java.time.Duration
 
 private const val RECONNECT_DELAY: Long = 5000
@@ -33,13 +28,19 @@ class ConsumerChannelProvider(
     rabbitMqAccess: RabbitMqAccess,
     queue: Queue,
     dispatcher: CoroutineDispatcher,
-    private val deliverCallback: DeliverCallback
+    private val deliverCallback: DeliverCallback,
+    private val prefetchCount: Int,
 ): AbstractChannelProvider(connectionFactory, rabbitMqAccess, queue) {
 
     private var watchDog: Job? = null
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())
 
     init {
+        if(prefetchCount  !in 1..MAX_PREFETCH_COUNT) {
+            error(
+                "Invalid prefetch count $prefetchCount. Prefetch count must be between 1 and $MAX_PREFETCH_COUNT"
+            )
+        }
         connection = createConnection()
         channel = createChannel()
         startWatchdog()
@@ -53,7 +54,7 @@ class ConsumerChannelProvider(
             val shutdownCallback = ConsumerShutdownSignalCallback { _, _ ->
                 closeChannel(this@apply)
             }
-            basicQos(MAX_PREFETCH_COUNT)
+            basicQos(prefetchCount)
             basicConsume(queue.queueName, deliverCallback, cancelCallback, shutdownCallback)
         }
     }
