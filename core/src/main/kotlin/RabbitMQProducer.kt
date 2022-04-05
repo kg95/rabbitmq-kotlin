@@ -8,21 +8,29 @@ import converter.Converter
 import exception.RabbitMqMessageReturnedException
 import kotlinx.coroutines.runBlocking
 import util.getLogger
+import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 
 class RabbitMQProducer<T: Any> (
-    connectionFactory: connection.ConnectionFactory,
-    access: RabbitMqAccess,
-    queue: Queue,
+    private val connectionFactory: connection.ConnectionFactory,
+    private val access: RabbitMqAccess,
+    private val queue: Queue,
     private val converter: Converter,
     private val type: Class<T>,
-    private val logger: Logger = getLogger(RabbitMQProducer::class.java),
     private val publishAttemptCount: Int = 1,
-    private val publishAttemptDelaySeconds: Long = 20
+    private val publishAttemptDelayMilliseconds: Long = 1000,
+    lateInitConnection: Boolean = false,
+    private val logger: Logger = getLogger(RabbitMQProducer::class.java)
 ) {
-    private val channelProvider: ProducerChannelProvider
+    private lateinit var channelProvider: ProducerChannelProvider
 
     init {
+        if(!lateInitConnection) {
+            init()
+        }
+    }
+
+    private fun init() {
         val onReturn = ReturnListener { replyCode, replyText, exchange, routingKey, _, body ->
             val message =
                 "Message returned from exchange: $exchange with routingKey: $routingKey ," +
@@ -64,15 +72,16 @@ class RabbitMQProducer<T: Any> (
             } catch (e: Throwable) {
                 lastException = e
             }
-            delay(publishAttemptDelaySeconds)
+            delay(publishAttemptDelayMilliseconds)
         }
         lastException?.let {
-            logger.error("Failed to publish message $publishAttemptCount times", lastException)
+            logger.error("Failed to publish message $publishAttemptCount times", it)
+            throw it
         }
     }
 
     @PreDestroy
-    fun tearDown() {
+    fun close() {
         channelProvider.close()
     }
 }
