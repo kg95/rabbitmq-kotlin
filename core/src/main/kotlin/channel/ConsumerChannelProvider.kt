@@ -16,12 +16,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 import model.Queue
 import model.RabbitMqAccess
-import java.time.Duration
 
-private const val RECONNECT_DELAY: Long = 5000
-private const val WATCH_DOG_INTERVAL = 5000L
+private const val WATCH_DOG_INTERVAL_MILLIS = 5000L
 private const val MAX_PREFETCH_COUNT = 65000
-private const val CHANNEL_RENEW_TIMEOUT_SECONDS = 10L
+private const val CHANNEL_RENEW_TIMEOUT_MILLIS = 10000L
+private const val CHANNEL_RENEW_DELAY_MILLIS = 5000L
 
 class ConsumerChannelProvider(
     connectionFactory: ConnectionFactory,
@@ -75,8 +74,8 @@ class ConsumerChannelProvider(
         }
         watchDog = watchDogScope.launch {
             while (isActive) {
-                delay(WATCH_DOG_INTERVAL)
-                withTimeoutOrNull(Duration.ofSeconds(CHANNEL_RENEW_TIMEOUT_SECONDS).toMillis()) {
+                delay(WATCH_DOG_INTERVAL_MILLIS)
+                withTimeoutOrNull(CHANNEL_RENEW_TIMEOUT_MILLIS) {
                     tryRenew()
                 }
             }
@@ -89,7 +88,7 @@ class ConsumerChannelProvider(
                 renewChannel()
             }
         } catch (e: Throwable) {
-            delay(RECONNECT_DELAY)
+            delay(CHANNEL_RENEW_DELAY_MILLIS)
         }
     }
 

@@ -2,7 +2,6 @@ import channel.ConsumerChannelProvider
 import com.rabbitmq.client.DeliverCallback
 import connection.ConnectionFactory
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.newSingleThreadContext
@@ -17,15 +16,13 @@ import converter.Converter
 import kotlinx.coroutines.delay
 import org.slf4j.Logger
 import java.time.Duration
-import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
 
 private const val CHANNEL_CAPACITY = 65000
 private const val DEFAULT_PREFETCH_COUNT = 1000
-private const val DEFAULT_ATTEMPT_COUNT: Int = 10
-private const val DEFAULT_ATTEMPT_DELAY_SECONDS: Long = 1000
+private const val DEFAULT_ACK_ATTEMPT_COUNT = 1
+private const val DEFAULT_ACK_ATTEMPT_DELAY_MILLIS = 1000L
 
-@ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
 open class RabbitMQConsumer<T>(
     private val connectionFactory: ConnectionFactory,
@@ -35,8 +32,8 @@ open class RabbitMQConsumer<T>(
     private val converter: Converter,
     private val type: Class<T>,
     private val prefetchCount: Int = DEFAULT_PREFETCH_COUNT,
-    private val acknowledgeAttemptCount: Int = DEFAULT_ATTEMPT_COUNT,
-    private val acknowledgeAttemptDelayMilliseconds: Long = DEFAULT_ATTEMPT_DELAY_SECONDS,
+    private val ackAttemptCount: Int = DEFAULT_ACK_ATTEMPT_COUNT,
+    private val ackAttemptDelayMillis: Long = DEFAULT_ACK_ATTEMPT_DELAY_MILLIS,
     lateInitConnection: Boolean = false,
     private val logger: Logger = getLogger(RabbitMQConsumer::class.java)
 ) {
@@ -88,7 +85,7 @@ open class RabbitMQConsumer<T>(
             return
         }
         var lastException: Throwable? = null
-        repeat(acknowledgeAttemptCount) {
+        repeat(ackAttemptCount) {
             try {
                 channelProvider.recreateChannel()
                 channelProvider.tryAck(pending.deliveryTag)
@@ -97,11 +94,11 @@ open class RabbitMQConsumer<T>(
                 lastException = e
                 channelProvider.recreateChannel()
             }
-            delay(acknowledgeAttemptDelayMilliseconds)
+            delay(ackAttemptDelayMillis)
         }
         lastException?.let {
             val message = "Failed to ack message for tag ${pending.deliveryTag} and value ${pending.value} " +
-                    "$acknowledgeAttemptCount times"
+                    "$ackAttemptCount times"
             logger.error(message, it)
             withContext(channelIncrementContext) {
                 if (pending.channelVersion == channelVersion) {
@@ -120,7 +117,7 @@ open class RabbitMQConsumer<T>(
             return
         }
         var lastException: Throwable? = null
-        repeat(acknowledgeAttemptCount) {
+        repeat(ackAttemptCount) {
             try {
                 channelProvider.tryNack(pending.deliveryTag)
                 return
@@ -128,11 +125,11 @@ open class RabbitMQConsumer<T>(
                 lastException = e
                 channelProvider.recreateChannel()
             }
-            delay(acknowledgeAttemptDelayMilliseconds)
+            delay(ackAttemptDelayMillis)
         }
         lastException?.let {
             val message = "Failed to nack message for tag ${pending.deliveryTag} and value ${pending.value} " +
-                    "$acknowledgeAttemptCount times"
+                    "$ackAttemptCount times"
             logger.error(message, it)
             withContext(channelIncrementContext) {
                 if (pending.channelVersion == channelVersion) {

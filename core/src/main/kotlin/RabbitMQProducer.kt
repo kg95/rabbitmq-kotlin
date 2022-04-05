@@ -8,8 +8,10 @@ import converter.Converter
 import exception.RabbitMqMessageReturnedException
 import kotlinx.coroutines.runBlocking
 import util.getLogger
-import javax.annotation.PostConstruct
 import javax.annotation.PreDestroy
+
+private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
+private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
     private val connectionFactory: connection.ConnectionFactory,
@@ -17,8 +19,8 @@ class RabbitMQProducer<T: Any> (
     private val queue: Queue,
     private val converter: Converter,
     private val type: Class<T>,
-    private val publishAttemptCount: Int = 1,
-    private val publishAttemptDelayMilliseconds: Long = 1000,
+    private val publishAttemptCount: Int = DEFAULT_PUBLISH_ATTEMPT_COUNT,
+    private val publishAttemptDelayMillis: Long = DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS,
     lateInitConnection: Boolean = false,
     private val logger: Logger = getLogger(RabbitMQProducer::class.java)
 ) {
@@ -72,7 +74,7 @@ class RabbitMQProducer<T: Any> (
             } catch (e: Throwable) {
                 lastException = e
             }
-            delay(publishAttemptDelayMilliseconds)
+            delay(publishAttemptDelayMillis)
         }
         lastException?.let {
             logger.error("Failed to publish message $publishAttemptCount times", it)
