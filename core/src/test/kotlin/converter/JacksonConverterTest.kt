@@ -31,10 +31,10 @@ class JacksonConverterTest {
         val convertedDouble = converter.toByteArray(originalDouble, Double::class.java)
         val convertedBoolean = converter.toByteArray(originalBoolean, Boolean::class.java)
 
-        assertThat(converter.toObject(convertedString, String::class.java)).isEqualTo(originalString)
-        assertThat(converter.toObject(convertedInt, Int::class.java)).isEqualTo(originalInt)
-        assertThat(converter.toObject(convertedDouble, Double::class.java)).isEqualTo(originalDouble)
-        assertThat(converter.toObject(convertedBoolean, Boolean::class.java)).isEqualTo(originalBoolean)
+        assertThat(converter.toObject(convertedString!!, String::class.java)).isEqualTo(originalString)
+        assertThat(converter.toObject(convertedInt!!, Int::class.java)).isEqualTo(originalInt)
+        assertThat(converter.toObject(convertedDouble!!, Double::class.java)).isEqualTo(originalDouble)
+        assertThat(converter.toObject(convertedBoolean!!, Boolean::class.java)).isEqualTo(originalBoolean)
     }
 
 
@@ -43,7 +43,7 @@ class JacksonConverterTest {
         val converter = JacksonConverter()
         val originalUUID = UUID.randomUUID()
         val convertedUUID = converter.toByteArray(originalUUID, UUID::class.java)
-        assertThat(converter.toObject(convertedUUID, UUID::class.java)).isEqualTo(originalUUID)
+        assertThat(converter.toObject(convertedUUID!!, UUID::class.java)).isEqualTo(originalUUID)
     }
 
     @Test
@@ -51,10 +51,10 @@ class JacksonConverterTest {
         val converter = JacksonConverter()
         val originalObject = TestClass()
         val convertedObject = converter.toByteArray(originalObject, TestClass::class.java)
-        val returnedObject = converter.toObject(convertedObject, TestClass::class.java)
-        assertThat(returnedObject.testString).isEqualTo(originalObject.testString)
-        assertThat(returnedObject.testInt).isEqualTo(originalObject.testInt)
-        assertThat(returnedObject.testBoolean).isEqualTo(originalObject.testBoolean)
+        val returnedObject = converter.toObject(convertedObject!!, TestClass::class.java)
+        assertThat(returnedObject!!.testString).isEqualTo(originalObject.testString)
+        assertThat(returnedObject!!.testInt).isEqualTo(originalObject.testInt)
+        assertThat(returnedObject!!.testBoolean).isEqualTo(originalObject.testBoolean)
     }
 
     @Test
@@ -63,9 +63,7 @@ class JacksonConverterTest {
         every { objectMapper.writeValueAsString(any()) } throws IOException()
 
         val converter = JacksonConverter(objectMapper)
-        assertThrows<ConverterException> {
-            converter.toByteArray("testString", String::class.java)
-        }
+        assertThat(converter.toByteArray("testString", String::class.java)).isNull()
     }
 
     @Test
@@ -75,8 +73,6 @@ class JacksonConverterTest {
         every { objectMapper.readValue(testByteArray, String::class.java) } throws IOException()
 
         val converter = JacksonConverter(objectMapper)
-        assertThrows<ConverterException> {
-            converter.toObject(testByteArray, String::class.java)
-        }
+        assertThat(converter.toObject(testByteArray, String::class.java)).isNull()
     }
 }
