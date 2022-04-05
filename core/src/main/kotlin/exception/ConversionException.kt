@@ -1,3 +1,3 @@
 package exception
 
-internal class ConverterException(message: String): IllegalArgumentException(message)
+class ConverterException(message: String): IllegalArgumentException(message)
