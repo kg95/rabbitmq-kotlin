@@ -11,24 +11,29 @@ repositories {
     mavenCentral()
 }
 
-val testOutput: Configuration by configurations.creating
 dependencies {
+    //kotlin
     implementation(kotlin("stdlib"))
+
+    //rabbitmq java api
     implementation("com.rabbitmq:amqp-client:5.14.2")
+
+    //kotlin coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
-    implementation("org.springframework.amqp:spring-rabbit:2.4.2")
+
+    //javax annotations
     implementation("javax.annotation:javax.annotation-api:1.3.2")
+
+    //jackson serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.1")
-    
+
+    //Test
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testImplementation("io.mockk:mockk:1.10.0")
     testImplementation("org.assertj:assertj-core:3.16.1")
     testImplementation("org.awaitility:awaitility-kotlin:4.0.3")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2")
-
-    testOutput(sourceSets["test"].output)
-
 }
 
 tasks.test {
