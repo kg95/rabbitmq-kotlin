@@ -43,7 +43,7 @@ internal class ConsumerChannelProviderTest {
     }
 
     @Test
-    fun createChannel_error() {
+    fun testCreateChannel_error() {
         mockChannelConnectionError()
         assertThrows<IOException> {
             ConsumerChannelProvider(
