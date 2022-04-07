@@ -1,5 +1,6 @@
 import channel.ProducerChannelProvider
 import com.rabbitmq.client.ReturnListener
+import connection.ConnectionProvider
 import kotlinx.coroutines.delay
 import model.RabbitMqAccess
 import model.Queue
@@ -7,13 +8,14 @@ import org.slf4j.Logger
 import converter.Converter
 import exception.RabbitMqMessageReturnedException
 import kotlinx.coroutines.runBlocking
+import model.ConnectionProperties
 import util.getLogger
 
 private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
 private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
-    connectionFactory: connection.ConnectionFactory,
+    connectionProvider: ConnectionProvider,
     access: RabbitMqAccess,
     queue: Queue,
     private val converter: Converter,
@@ -32,8 +34,11 @@ class RabbitMQProducer<T: Any> (
             logger.error(message, RabbitMqMessageReturnedException(message))
             runBlocking { publish(body) }
         }
+        val connectionProperties = ConnectionProperties(
+            access.username, access.password, access.host, access.port, queue.virtualHost, false
+        )
         channelProvider = ProducerChannelProvider(
-            connectionFactory, access, queue, onReturn
+            connectionProvider, connectionProperties, queue.queueName, onReturn
         )
     }
 
