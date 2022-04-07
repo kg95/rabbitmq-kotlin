@@ -8,31 +8,23 @@ import converter.Converter
 import exception.RabbitMqMessageReturnedException
 import kotlinx.coroutines.runBlocking
 import util.getLogger
-import javax.annotation.PreDestroy
 
 private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
 private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
-    private val connectionFactory: connection.ConnectionFactory,
-    private val access: RabbitMqAccess,
-    private val queue: Queue,
+    connectionFactory: connection.ConnectionFactory,
+    access: RabbitMqAccess,
+    queue: Queue,
     private val converter: Converter,
     private val type: Class<T>,
     private val publishAttemptCount: Int = DEFAULT_PUBLISH_ATTEMPT_COUNT,
     private val publishAttemptDelayMillis: Long = DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS,
-    lateInitConnection: Boolean = false,
     private val logger: Logger = getLogger(RabbitMQProducer::class.java)
 ) {
-    private lateinit var channelProvider: ProducerChannelProvider
+    private var channelProvider: ProducerChannelProvider
 
     init {
-        if(!lateInitConnection) {
-            init()
-        }
-    }
-
-    private fun init() {
         val onReturn = ReturnListener { replyCode, replyText, exchange, routingKey, _, body ->
             val message =
                 "Message returned from exchange: $exchange with routingKey: $routingKey ," +
@@ -82,7 +74,6 @@ class RabbitMQProducer<T: Any> (
         }
     }
 
-    @PreDestroy
     fun close() {
         channelProvider.close()
     }

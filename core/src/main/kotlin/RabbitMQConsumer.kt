@@ -25,16 +25,15 @@ private const val DEFAULT_ACK_ATTEMPT_DELAY_MILLIS = 1000L
 
 @ObsoleteCoroutinesApi
 open class RabbitMQConsumer<T>(
-    private val connectionFactory: ConnectionFactory,
-    private val defaultDispatcher: CoroutineDispatcher,
-    private val access: RabbitMqAccess,
-    private val queue: Queue,
+    connectionFactory: ConnectionFactory,
+    defaultDispatcher: CoroutineDispatcher,
+    access: RabbitMqAccess,
+    queue: Queue,
     private val converter: Converter,
     private val type: Class<T>,
-    private val prefetchCount: Int = DEFAULT_PREFETCH_COUNT,
+    prefetchCount: Int = DEFAULT_PREFETCH_COUNT,
     private val ackAttemptCount: Int = DEFAULT_ACK_ATTEMPT_COUNT,
     private val ackAttemptDelayMillis: Long = DEFAULT_ACK_ATTEMPT_DELAY_MILLIS,
-    lateInitConnection: Boolean = false,
     private val logger: Logger = getLogger(RabbitMQConsumer::class.java)
 ) {
     private val messageBuffer = Channel<PendingRabbitMQMessage<T>>(
@@ -49,12 +48,6 @@ open class RabbitMQConsumer<T>(
     private lateinit var channelProvider: ConsumerChannelProvider
 
     init {
-        if(!lateInitConnection) {
-            init()
-        }
-    }
-
-    fun init() {
         val deliveryCallback = DeliverCallback { _, message ->
             runBlocking {
                 val transformed = converter.toObject(message.body, type)
