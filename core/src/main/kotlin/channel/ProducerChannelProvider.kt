@@ -3,35 +3,39 @@ package channel
 import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.MessageProperties
-import connection.ConnectionFactory
-import model.Queue
-import model.RabbitMqAccess
+import connection.ConnectionProvider
+import model.ConnectionProperties
 
-class ProducerChannelProvider(
-    connectionFactory: ConnectionFactory,
-    rabbitMqAccess: RabbitMqAccess,
-    queue: Queue,
+internal class ProducerChannelProvider(
+    connectionProvider: ConnectionProvider,
+    connectionProperties: ConnectionProperties,
+    private val queueName: String,
     private val returnListener: ReturnListener
-): AbstractChannelProvider(connectionFactory, rabbitMqAccess, queue) {
+) {
+    private val connectionManager: ConnectionManager
+    private var channel: Channel
 
     init {
-        this.connectionFactory.isAutomaticRecoveryEnabled = false
-        connection = createConnection()
+        connectionManager = ConnectionManager(connectionProvider, connectionProperties)
         channel = createChannel()
     }
 
-    override fun createChannel(): Channel {
-        return super.createChannel().apply {
+    private fun createChannel(): Channel {
+        return connectionManager.createChannel().apply {
             addReturnListener(returnListener)
         }
     }
 
     fun recreateChannel() {
         if (!channel.isOpen) {
-            createChannel()
+            channel = createChannel()
         }
     }
 
     fun publish(message: ByteArray) =
-            channel.basicPublish("", queue.queueName, true, MessageProperties.PERSISTENT_BASIC, message)
+            channel.basicPublish("", queueName, true, MessageProperties.PERSISTENT_BASIC, message)
+
+    fun close() {
+        connectionManager.close()
+    }
 }

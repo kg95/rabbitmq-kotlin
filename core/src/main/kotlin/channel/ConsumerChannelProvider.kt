@@ -4,7 +4,7 @@ import com.rabbitmq.client.CancelCallback
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.ConsumerShutdownSignalCallback
 import com.rabbitmq.client.DeliverCallback
-import connection.ConnectionFactory
+import connection.ConnectionProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -14,8 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import model.Queue
-import model.RabbitMqAccess
+import model.ConnectionProperties
 
 private const val WATCH_DOG_INTERVAL_MILLIS = 5000L
 private const val MAX_PREFETCH_COUNT = 65000
@@ -23,13 +22,15 @@ private const val CHANNEL_RENEW_TIMEOUT_MILLIS = 10000L
 private const val CHANNEL_RENEW_DELAY_MILLIS = 5000L
 
 class ConsumerChannelProvider(
-    connectionFactory: ConnectionFactory,
-    rabbitMqAccess: RabbitMqAccess,
-    queue: Queue,
+    connectionProvider: ConnectionProvider,
+    connectionProperties: ConnectionProperties,
     dispatcher: CoroutineDispatcher,
+    private val queueName: String,
     private val deliverCallback: DeliverCallback,
     private val prefetchCount: Int,
-): AbstractChannelProvider(connectionFactory, rabbitMqAccess, queue) {
+) {
+    private val connectionManager: ConnectionManager
+    private var channel: Channel
 
     private var watchDog: Job? = null
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())
@@ -40,13 +41,13 @@ class ConsumerChannelProvider(
                 "Invalid prefetch count $prefetchCount. Prefetch count must be between 1 and $MAX_PREFETCH_COUNT"
             )
         }
-        connection = createConnection()
+        connectionManager = ConnectionManager(connectionProvider, connectionProperties)
         channel = createChannel()
         startWatchdog()
     }
 
-    override fun createChannel(): Channel {
-        return super.createChannel().apply {
+    private fun createChannel(): Channel {
+        return connectionManager.createChannel().apply {
             val cancelCallback = CancelCallback {
                 closeChannel(this@apply)
             }
@@ -54,7 +55,7 @@ class ConsumerChannelProvider(
                 closeChannel(this@apply)
             }
             basicQos(prefetchCount)
-            basicConsume(queue.queueName, deliverCallback, cancelCallback, shutdownCallback)
+            basicConsume(queueName, deliverCallback, cancelCallback, shutdownCallback)
         }
     }
 
@@ -100,9 +101,7 @@ class ConsumerChannelProvider(
     fun channelIsOpen() = channel.isOpen
 
     fun recreateChannel() {
-        if(!channel.isOpen) {
-            startWatchdog()
-        }
+        startWatchdog()
     }
 
     fun tryAck(deliveryTag: Long) =
@@ -111,8 +110,8 @@ class ConsumerChannelProvider(
     fun tryNack(deliveryTag: Long) =
         channel.basicNack(deliveryTag, false, true)
 
-    override fun close() {
+    fun close() {
         watchDogScope.cancel()
-        super.close()
+        connectionManager.close()
     }
 }
