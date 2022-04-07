@@ -1,6 +1,6 @@
 import channel.ConsumerChannelProvider
 import com.rabbitmq.client.DeliverCallback
-import connection.ConnectionFactory
+import connection.ConnectionProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -14,6 +14,7 @@ import model.RabbitMqAccess
 import util.getLogger
 import converter.Converter
 import kotlinx.coroutines.delay
+import model.ConnectionProperties
 import org.slf4j.Logger
 import java.time.Duration
 import javax.annotation.PreDestroy
@@ -25,7 +26,7 @@ private const val DEFAULT_ACK_ATTEMPT_DELAY_MILLIS = 1000L
 
 @ObsoleteCoroutinesApi
 open class RabbitMQConsumer<T>(
-    connectionFactory: ConnectionFactory,
+    connectionProvider: ConnectionProvider,
     defaultDispatcher: CoroutineDispatcher,
     access: RabbitMqAccess,
     queue: Queue,
@@ -60,8 +61,12 @@ open class RabbitMQConsumer<T>(
                 }
             }
         }
+        val connectionProperties = ConnectionProperties(
+            access.username, access.password, access.host, access.port, queue.virtualHost, true
+        )
         channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, defaultDispatcher, deliveryCallback, prefetchCount
+            connectionProvider, connectionProperties, defaultDispatcher,
+            queue.queueName, deliveryCallback, prefetchCount
         )
     }
 
