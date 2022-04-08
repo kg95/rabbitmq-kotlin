@@ -35,7 +35,7 @@ class RabbitMQProducer<T: Any> (
             runBlocking { publish(body) }
         }
         val connectionProperties = ConnectionProperties(
-            access.username, access.password, access.host, access.port, queue.virtualHost, false
+            access.username, access.password, access.host, access.port, queue.virtualHost
         )
         channelProvider = ProducerChannelProvider(
             connectionProvider, connectionProperties, queue.queueName, onReturn

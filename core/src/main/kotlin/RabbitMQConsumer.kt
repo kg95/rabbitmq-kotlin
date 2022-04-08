@@ -62,7 +62,7 @@ open class RabbitMQConsumer<T>(
             }
         }
         val connectionProperties = ConnectionProperties(
-            access.username, access.password, access.host, access.port, queue.virtualHost, true
+            access.username, access.password, access.host, access.port, queue.virtualHost
         )
         channelProvider = ConsumerChannelProvider(
             connectionProvider, connectionProperties, defaultDispatcher,

@@ -6,5 +6,5 @@ data class ConnectionProperties(
     val host: String,
     val port: Int,
     val virtualHost: String,
-    val isAutomaticRecoveryEnabled: Boolean
+    val queueName: String
 )
