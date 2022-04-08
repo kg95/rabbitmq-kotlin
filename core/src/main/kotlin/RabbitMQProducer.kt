@@ -1,6 +1,5 @@
 import channel.ProducerChannelProvider
 import com.rabbitmq.client.ReturnListener
-import connection.ConnectionProvider
 import kotlinx.coroutines.delay
 import model.RabbitMqAccess
 import model.Queue
@@ -15,7 +14,6 @@ private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
 private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
-    connectionProvider: ConnectionProvider,
     access: RabbitMqAccess,
     queue: Queue,
     private val converter: Converter,
@@ -38,7 +36,7 @@ class RabbitMQProducer<T: Any> (
             access.username, access.password, access.host, access.port, queue.virtualHost
         )
         channelProvider = ProducerChannelProvider(
-            connectionProvider, connectionProperties, queue.queueName, onReturn
+            connectionProperties, queue.queueName, onReturn
         )
     }
 

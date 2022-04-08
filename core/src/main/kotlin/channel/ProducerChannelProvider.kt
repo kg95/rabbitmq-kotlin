@@ -3,25 +3,23 @@ package channel
 import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.MessageProperties
-import connection.ConnectionProvider
 import model.ConnectionProperties
 
 internal class ProducerChannelProvider(
-    connectionProvider: ConnectionProvider,
     connectionProperties: ConnectionProperties,
     private val queueName: String,
     private val returnListener: ReturnListener
 ) {
-    private val connectionManager: ConnectionManager
+    private val connectionProvider: ConnectionProvider
     private var channel: Channel
 
     init {
-        connectionManager = ConnectionManager(connectionProvider, connectionProperties)
+        connectionProvider = ConnectionProvider(connectionProperties)
         channel = createChannel()
     }
 
     private fun createChannel(): Channel {
-        return connectionManager.createChannel().apply {
+        return connectionProvider.createChannel().apply {
             addReturnListener(returnListener)
         }
     }
@@ -36,6 +34,6 @@ internal class ProducerChannelProvider(
             channel.basicPublish("", queueName, true, MessageProperties.PERSISTENT_BASIC, message)
 
     fun close() {
-        connectionManager.close()
+        connectionProvider.close()
     }
 }

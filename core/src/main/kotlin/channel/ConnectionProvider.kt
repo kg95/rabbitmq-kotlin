@@ -5,7 +5,7 @@ import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import model.ConnectionProperties
 
-internal class ConnectionManager(
+internal class ConnectionProvider(
     private val connectionProperties: ConnectionProperties
 ) {
     private val connectionFactory: ConnectionFactory = ConnectionFactory()
