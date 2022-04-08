@@ -24,10 +24,10 @@ private const val CHANNEL_RENEW_DELAY_MILLIS = 5000L
 class ConsumerChannelProvider(
     connectionProperties: ConnectionProperties,
     dispatcher: CoroutineDispatcher,
-    private val queueName: String,
     private val deliverCallback: DeliverCallback,
     private val prefetchCount: Int,
 ) {
+    private val queueName: String = connectionProperties.queueName
     private val connectionProvider: ConnectionProvider
     private var channel: Channel
 

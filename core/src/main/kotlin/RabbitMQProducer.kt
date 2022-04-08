@@ -14,8 +14,7 @@ private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
 private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
-    access: RabbitMqAccess,
-    queue: Queue,
+    connectionProperties: ConnectionProperties,
     private val converter: Converter,
     private val type: Class<T>,
     private val publishAttemptCount: Int = DEFAULT_PUBLISH_ATTEMPT_COUNT,
@@ -32,12 +31,7 @@ class RabbitMQProducer<T: Any> (
             logger.error(message, RabbitMqMessageReturnedException(message))
             runBlocking { publish(body) }
         }
-        val connectionProperties = ConnectionProperties(
-            access.username, access.password, access.host, access.port, queue.virtualHost
-        )
-        channelProvider = ProducerChannelProvider(
-            connectionProperties, queue.queueName, onReturn
-        )
+        channelProvider = ProducerChannelProvider(connectionProperties, onReturn)
     }
 
     suspend fun sendMessage(message: T) {
