@@ -3,6 +3,7 @@ package channel
 import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.MessageProperties
+import connection.ConnectionProvider
 import model.ConnectionProperties
 
 internal class ProducerChannelProvider(
