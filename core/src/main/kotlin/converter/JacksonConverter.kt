@@ -7,19 +7,23 @@ class JacksonConverter(
     private val objectMapper: ObjectMapper = ObjectMapper()
 ): Converter {
 
-    override fun <T> toByteArray(value: T, type: Class<T>): ByteArray? {
+    override fun <T> toByteArray(value: T, type: Class<T>): ByteArray {
         return try {
             objectMapper.writeValueAsString(value).toByteArray()
         } catch (e: Throwable) {
-            null
+            throw ConverterException(
+                "Failed to convert value of type ${type.name} to byte array, cause ${e.message}"
+            )
         }
     }
 
-    override fun <T> toObject(value: ByteArray, type: Class<T>): T? {
+    override fun <T> toObject(value: ByteArray, type: Class<T>): T {
         return try {
-            return objectMapper.readValue(String(value), type)
+            objectMapper.readValue(String(value), type)
         } catch (e: Throwable) {
-            null
+            throw ConverterException(
+                "Failed to convert byte array to value of type ${type.name}, cause: ${e.message}"
+            )
         }
     }
 }
