@@ -1,20 +1,20 @@
 package channel
 
-import com.rabbitmq.client.CancelCallback
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
-import com.rabbitmq.client.ConsumerShutdownSignalCallback
+import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DeliverCallback
-import connection.DefaultConnectionFactory
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
+import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
-import model.Queue
-import model.RabbitMqAccess
+import model.ConnectionProperties
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
@@ -22,47 +22,60 @@ import java.io.IOException
 @ExperimentalCoroutinesApi
 internal class ConsumerChannelProviderTest {
 
-    private val connectionFactory: DefaultConnectionFactory = mockk(relaxed = true)
     private val testDispatcher = TestCoroutineDispatcher()
     private val testDelivery: DeliverCallback = mockk(relaxed = true)
-    private val access: RabbitMqAccess = RabbitMqAccess("rabbitmq", "rabbitmq", "localhost", 5672)
-    private val queue: Queue = Queue("test", "/")
+    private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
     private val testPrefetchCount: Int = 1000
 
+    @BeforeEach
+    fun initialize() {
+        mockkConstructor(ConnectionFactory::class)
+    }
+
+    @AfterEach
+    fun tearDown() {
+        clearAllMocks()
+    }
+
     @Test
-    fun testCreateChannel() {
-        val channel = mockChannelSuccessful()
+    fun testInitialize() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
         verify {
+            anyConstructed<ConnectionFactory>().username = connectionProperties.username
+            anyConstructed<ConnectionFactory>().password = connectionProperties.password
+            anyConstructed<ConnectionFactory>().host = connectionProperties.host
+            anyConstructed<ConnectionFactory>().port = connectionProperties.port
+            anyConstructed<ConnectionFactory>().virtualHost = connectionProperties.virtualHost
+            anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
+            anyConstructed<ConnectionFactory>().newConnection()
+            connection.createChannel()
             channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
+            channel.basicConsume(connectionProperties.queueName, testDelivery, any(), any())
         }
         channelProvider.close()
     }
 
     @Test
-    fun testCreateChannel_error() {
-        mockChannelConnectionError()
+    fun testInitialize_error() {
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
         assertThrows<IOException> {
             ConsumerChannelProvider(
-                connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+                connectionProperties, testDispatcher, testDelivery, testPrefetchCount
             )
         }
     }
 
     @Test
     fun testTryAck() {
-        val channel = mockChannelSuccessful()
-
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
 
         val deliveryTag = 1L
         channelProvider.tryAck(deliveryTag)
@@ -75,17 +88,13 @@ internal class ConsumerChannelProviderTest {
 
     @Test
     fun testTryAck_error() {
-        val channel = mockChannelSuccessful()
-
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
 
-        every { channel.basicAck(any(), false) }.throws(IOException("testError"))
+        every { channel.basicAck(any(), false) } throws IOException()
 
         val deliveryTag = 1L
         assertThrows<IOException> {
@@ -100,15 +109,11 @@ internal class ConsumerChannelProviderTest {
 
     @Test
     fun testTryNack() {
-        val channel = mockChannelSuccessful()
-
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
 
         val deliveryTag = 1L
         channelProvider.tryNack(deliveryTag)
@@ -120,17 +125,13 @@ internal class ConsumerChannelProviderTest {
 
     @Test
     fun testTryNack_error() {
-        val channel = mockChannelSuccessful()
-
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
 
-        every { channel.basicNack(any(), false, true) }.throws(IOException("testError"))
+        every { channel.basicNack(any(), false, true) } throws IOException()
 
         val deliveryTag = 1L
         assertThrows<IOException> {
@@ -144,43 +145,57 @@ internal class ConsumerChannelProviderTest {
     }
 
     @Test
-    fun testReconnectFailed() {
-        val connection = mockConnection()
-        val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() }.returns(channel)
-        every { channel.isOpen } returns true
-
+    fun testReconnect() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
 
         every { connection.isOpen } returns false
         every { channel.isOpen } returns false
-        every { connectionFactory.createConnection() }.throws(IOException("testError"))
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
 
         testDispatcher.advanceTimeBy(20001)
 
-        verify(atLeast = 3, atMost = 5) {
-            connectionFactory.createConnection()
+        assertThat(channelProvider.channelIsOpen()).isFalse
+        verify(atLeast = 2) { anyConstructed<ConnectionFactory>().newConnection() }
+
+        val newConnection = mockNewSuccessfulConnection()
+        mockNewSuccessfulChannel(newConnection)
+
+        testDispatcher.advanceTimeBy(20001)
+
+        assertThat(channelProvider.channelIsOpen()).isTrue
+    }
+
+    @Test
+    fun testReconnectFailed() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
+        )
+
+        every { connection.isOpen } returns false
+        every { channel.isOpen } returns false
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
+
+        testDispatcher.advanceTimeBy(20001)
+
+        verify(atLeast = 3) {
+            anyConstructed<ConnectionFactory>().newConnection()
         }
         channelProvider.close()
     }
 
     @Test
     fun testChannelIsOpen() {
-        val channel = mockChannelSuccessful()
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
 
         assertThat(channelProvider.channelIsOpen()).isTrue
 
@@ -190,107 +205,30 @@ internal class ConsumerChannelProviderTest {
     }
 
     @Test
-    fun testRecreateChannel() {
-        val connection = mockConnection()
-        val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() } returns channel
-        every { channel.isOpen } returns true
-
-        val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
-        )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
-
-        every { connection.isOpen } returns false
-        every { channel.isOpen } returns false
-
-        channelProvider.recreateChannel()
-
-        testDispatcher.advanceTimeBy(10000)
-
-        verify(atLeast = 2) {
-            connectionFactory.createConnection()
-        }
-    }
-
-    @Test
     fun testClose() {
-        val connection = mockConnection()
-        val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() }.returns(channel)
-        every { channel.isOpen } returns true
-
+        val connection = mockNewSuccessfulConnection()
+        mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
+            connectionProperties, testDispatcher, testDelivery, testPrefetchCount
         )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), any())
-        }
+
         channelProvider.close()
         verify {
             connection.close()
         }
     }
 
-    @Test
-    fun testShutDownSignalCallBack() {
-        val channel = mockChannelSuccessful()
-        val shutdownCallback = slot<ConsumerShutdownSignalCallback>()
-        ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
-        )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, any(), capture(shutdownCallback))
-        }
-        assertThat(shutdownCallback.isCaptured).isTrue
-        assertThat(shutdownCallback.isNull).isFalse
-    }
-
-    @Test
-    fun testCancelCallBack() {
-        val channel = mockChannelSuccessful()
-        val cancelCallback = slot<CancelCallback>()
-        ConsumerChannelProvider(
-            connectionFactory, access, queue, testDispatcher, testDelivery, testPrefetchCount
-        )
-        verify {
-            channel.basicQos(testPrefetchCount)
-            channel.basicConsume(queue.queueName, testDelivery, capture(cancelCallback), any())
-        }
-        assertThat(cancelCallback.isCaptured).isTrue
-        assertThat(cancelCallback.isNull).isFalse
-    }
-
-    private fun mockConnection(): Connection {
+    private fun mockNewSuccessfulConnection(): Connection {
         val connection = mockk<Connection>(relaxed = true)
-        every { connectionFactory.createConnection() }.returns(connection)
+        every { anyConstructed<ConnectionFactory>().newConnection() } returns connection
         every { connection.isOpen } returns true
         return connection
     }
 
-    private fun mockChannelSuccessful(): Channel {
-
-        val connection = mockConnection()
+    private fun mockNewSuccessfulChannel(connection: Connection): Channel {
         val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() }.returns(channel)
+        every { connection.createChannel() } returns channel
         every { channel.isOpen } returns true
-        return channel
-    }
-
-    private fun mockChannelConnectionError(): Channel {
-        val connection = mockConnection()
-        every { connectionFactory.createConnection()
-        }.throws(IOException("testError"))
-        every { connection.isOpen } returns false
-
-        val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() }.returns(channel)
-        every { channel.isOpen } returns false
         return channel
     }
 }

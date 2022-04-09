@@ -10,7 +10,7 @@ import org.junit.jupiter.api.assertThrows
 import java.io.IOException
 import java.util.UUID
 
-class JacksonConverterTest {
+internal class JacksonConverterTest {
 
     private class TestClass(
         val testString: String = "testString",

@@ -1,19 +1,22 @@
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.MessageProperties
 import com.rabbitmq.client.ReturnListener
-import connection.DefaultConnectionFactory
 import converter.DefaultConverter
 import exception.ConverterException
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.slot
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import model.Queue
-import model.RabbitMqAccess
+import model.ConnectionProperties
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
@@ -21,23 +24,34 @@ import java.io.IOException
 @ExperimentalCoroutinesApi
 class RabbitMQProducerTest {
 
-    private val connectionFactory = mockk<DefaultConnectionFactory>(relaxed = true)
-    private val access = RabbitMqAccess("rabbitmq", "rabbitmq", "localhost", 5672)
-    private val queue = Queue("testQueue", "/")
-    private val converter = mockk<DefaultConverter>(relaxed = true)
+    private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
+    private val converter: DefaultConverter = mockk(relaxed = true)
     private val type = String::class.java
 
-    @Test
-    fun testCreation() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
+    @BeforeEach
+    fun initialize() {
+        mockkConstructor(ConnectionFactory::class)
+    }
 
-        RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
+    @AfterEach
+    fun tearDown() {
+        clearAllMocks()
+    }
+
+    @Test
+    fun testInitialize() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        RabbitMQProducer(connectionProperties, converter, type)
 
         verify {
-            connectionFactory.createConnection()
+            anyConstructed<ConnectionFactory>().username = connectionProperties.username
+            anyConstructed<ConnectionFactory>().password = connectionProperties.password
+            anyConstructed<ConnectionFactory>().host = connectionProperties.host
+            anyConstructed<ConnectionFactory>().port = connectionProperties.port
+            anyConstructed<ConnectionFactory>().virtualHost = connectionProperties.virtualHost
+            anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
+            anyConstructed<ConnectionFactory>().newConnection()
             connection.createChannel()
             channel.addReturnListener(any() as ReturnListener)
         }
@@ -45,28 +59,17 @@ class RabbitMQProducerTest {
 
     @Test
     fun testCreation_error() {
-        val connection = mockConnection()
-        mockChannelFailed(connection)
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
         assertThrows<IOException> {
-            RabbitMQProducer(
-                connectionFactory, access, queue, converter, type
-            )
+            RabbitMQProducer(connectionProperties, converter, type)
         }
     }
 
     @Test
     fun testClose() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
-
-        val producer = RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.addReturnListener(any() as ReturnListener)
-        }
+        val connection = mockNewSuccessfulConnection()
+        mockNewSuccessfulChannel(connection)
+        val producer = RabbitMQProducer(connectionProperties, converter, type)
 
         producer.close()
 
@@ -77,21 +80,13 @@ class RabbitMQProducerTest {
 
     @Test
     fun testSendMessages() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
-
-        val producer = RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.addReturnListener(any() as ReturnListener)
-        }
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val producer = RabbitMQProducer(connectionProperties, converter, type)
 
         val messages = listOf( "message1", "message2", "message3")
         for (message in messages) {
-            every { converter.toByteArray(message, String::class.java) } returns message.toByteArray()
+            every { converter.toByteArray(message, type) } returns message.toByteArray()
         }
 
         runBlockingTest {
@@ -100,7 +95,9 @@ class RabbitMQProducerTest {
 
         val caughtMessages = mutableListOf<ByteArray>()
         verify(exactly = 3) {
-            channel.basicPublish("", queue.queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessages))
+            channel.basicPublish(
+                "", any(), true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessages)
+            )
         }
 
         assertThat(caughtMessages.size).isEqualTo(3)
@@ -111,20 +108,12 @@ class RabbitMQProducerTest {
 
     @Test
     fun testSendMessages_conversionError() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
+        val connection = mockNewSuccessfulConnection()
+        mockNewSuccessfulChannel(connection)
+        val producer = RabbitMQProducer(connectionProperties, converter, type)
 
-        val producer = RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.addReturnListener(any() as ReturnListener)
-        }
-
-        val messages = listOf( "message1")
-        every { converter.toByteArray(messages.first(), String::class.java) } throws ConverterException("testError")
+        val messages = listOf( "message")
+        every { converter.toByteArray(messages.first(), type) } throws ConverterException("testError")
 
         runBlockingTest {
             assertThrows<ConverterException> {
@@ -135,25 +124,17 @@ class RabbitMQProducerTest {
 
     @Test
     fun testSendMessages_rabbitMQError() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
-
-        val producer = RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.addReturnListener(any() as ReturnListener)
-        }
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val producer = RabbitMQProducer(connectionProperties, converter, type)
 
         val messages = listOf( "message1", "message2", "message3")
         for (message in messages) {
-            every { converter.toByteArray(message, String::class.java) } returns message.toByteArray()
+            every { converter.toByteArray(message, type) } returns message.toByteArray()
         }
         every { channel.isOpen } returns false
         every { connection.isOpen } returns false
-        every { connection.createChannel() } throws IOException()
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
 
         runBlockingTest {
             assertThrows<IOException> {
@@ -164,26 +145,17 @@ class RabbitMQProducerTest {
 
     @Test
     fun testSendMessages_reconnect() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
-
-        val producer = RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.addReturnListener(any() as ReturnListener)
-        }
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val producer = RabbitMQProducer(connectionProperties, converter, type)
 
         val messages = listOf( "message1")
-        every { converter.toByteArray(messages.first(), String::class.java) } returns messages.first().toByteArray()
+        every { converter.toByteArray(messages.first(), type) } returns messages.first().toByteArray()
         every { channel.isOpen } returns false
         every { connection.isOpen } returns false
 
-        val newConnection = mockConnection()
-        val newChannel = mockChannelSuccessful(newConnection)
-        every { newConnection.createChannel() } returns newChannel
+        val newConnection = mockNewSuccessfulConnection()
+        val newChannel = mockNewSuccessfulChannel(newConnection)
 
         runBlockingTest {
             producer.sendMessages(messages)
@@ -191,28 +163,21 @@ class RabbitMQProducerTest {
 
         val caughtMessage = slot<ByteArray>()
         verify(exactly = 1) {
-            channel.basicPublish("", queue.queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage))
+            newChannel.basicPublish(
+                "", any(), true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage)
+            )
         }
-
         assertThat(String(caughtMessage.captured)).isEqualTo(messages.first())
     }
 
     @Test
     fun testSendMessage() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
-
-        val producer = RabbitMQProducer(
-            connectionFactory, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.addReturnListener(any() as ReturnListener)
-        }
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val producer = RabbitMQProducer(connectionProperties, converter, type)
 
         val message = "message"
-        every { converter.toByteArray(message, String::class.java) } returns message.toByteArray()
+        every { converter.toByteArray(message, type) } returns message.toByteArray()
 
         runBlockingTest {
             producer.sendMessage(message)
@@ -220,31 +185,24 @@ class RabbitMQProducerTest {
 
         val caughtMessage = slot<ByteArray>()
         verify(exactly = 1) {
-            channel.basicPublish("", queue.queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage))
+            channel.basicPublish(
+                "", connectionProperties.queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage)
+            )
         }
-
         assertThat(String(caughtMessage.captured)).isEqualTo(message)
     }
 
-    private fun mockConnection(): Connection {
+    private fun mockNewSuccessfulConnection(): Connection {
         val connection = mockk<Connection>(relaxed = true)
-        every { connectionFactory.createConnection() } returns connection
+        every { anyConstructed<ConnectionFactory>().newConnection() } returns connection
         every { connection.isOpen } returns true
         return connection
     }
 
-    private fun mockChannelSuccessful(connection: Connection): Channel {
+    private fun mockNewSuccessfulChannel(connection: Connection): Channel {
         val channel = mockk<Channel>(relaxed = true)
         every { connection.createChannel() } returns channel
         every { channel.isOpen } returns true
-        return channel
-    }
-
-    private fun mockChannelFailed(connection: Connection): Channel {
-        val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() } throws IOException()
-        every { channel.isOpen } returns false
-        every { connection.isOpen } returns false
         return channel
     }
 }

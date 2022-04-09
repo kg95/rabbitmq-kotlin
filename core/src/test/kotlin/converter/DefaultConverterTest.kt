@@ -5,7 +5,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-class DefaultConverterTest {
+internal class DefaultConverterTest {
 
     @Test
     fun testConversion_string() {

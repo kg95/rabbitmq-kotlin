@@ -25,8 +25,8 @@ private const val DEFAULT_ACK_ATTEMPT_DELAY_MILLIS = 1000L
 
 @ObsoleteCoroutinesApi
 open class RabbitMQConsumer<T>(
-    defaultDispatcher: CoroutineDispatcher,
     connectionProperties: ConnectionProperties,
+    defaultDispatcher: CoroutineDispatcher,
     private val converter: Converter,
     private val type: Class<T>,
     prefetchCount: Int = DEFAULT_PREFETCH_COUNT,

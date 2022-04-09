@@ -1,73 +1,80 @@
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
+import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DeliverCallback
-import connection.DefaultConnectionFactory
+import com.rabbitmq.client.ReturnListener
 import converter.DefaultConverter
+import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
+import model.ConnectionProperties
 import model.PendingRabbitMQMessage
-import model.Queue
-import model.RabbitMqAccess
+import org.junit.jupiter.api.AfterEach
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
 
 @ExperimentalCoroutinesApi
+@ObsoleteCoroutinesApi
 internal class RabbitMQConsumerTest {
 
-    private val connectionFactory = mockk<DefaultConnectionFactory>(relaxed = true)
+    private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
     private val dispatcher = TestCoroutineDispatcher()
-    private val access = RabbitMqAccess("rabbitmq", "rabbitmq", "localhost", 5672)
-    private val queue = Queue("testQueue", "/")
     private val converter = mockk<DefaultConverter>(relaxed = true)
     private val type = String::class.java
 
-    @Test
-    fun testCreation() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
+    @BeforeEach
+    fun initialize() {
+        mockkConstructor(ConnectionFactory::class)
+    }
 
-        RabbitMQConsumer(
-            connectionFactory, dispatcher, access, queue, converter, type
-        )
+    @AfterEach
+    fun tearDown() {
+        clearAllMocks()
+    }
+
+    @Test
+    fun testInitialize() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        RabbitMQConsumer(connectionProperties, dispatcher, converter, type)
 
         verify {
-            connectionFactory.createConnection()
+            anyConstructed<ConnectionFactory>().username = connectionProperties.username
+            anyConstructed<ConnectionFactory>().password = connectionProperties.password
+            anyConstructed<ConnectionFactory>().host = connectionProperties.host
+            anyConstructed<ConnectionFactory>().port = connectionProperties.port
+            anyConstructed<ConnectionFactory>().virtualHost = connectionProperties.virtualHost
+            anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
+            anyConstructed<ConnectionFactory>().newConnection()
             connection.createChannel()
             channel.basicQos(any())
-            channel.basicConsume(queue.queueName, any() as DeliverCallback, any(), any())
+            channel.basicConsume(connectionProperties.queueName, any() as DeliverCallback, any(), any())
         }
     }
 
     @Test
     fun testCreation_error() {
-        val connection = mockConnection()
-        mockChannelFailed(connection)
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
         assertThrows<IOException> {
             RabbitMQConsumer(
-                connectionFactory, dispatcher, access, queue, converter, type
+                connectionProperties, dispatcher, converter, type
             )
         }
     }
 
     @Test
     fun testClose() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
-
-        val consumer = RabbitMQConsumer(
-            connectionFactory, dispatcher, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.basicQos(any())
-            channel.basicConsume(queue.queueName, any() as DeliverCallback, any(), any())
-        }
+        val connection = mockNewSuccessfulConnection()
+        mockNewSuccessfulChannel(connection)
+        val consumer = RabbitMQConsumer(connectionProperties, dispatcher, converter, type)
 
         consumer.close()
 
@@ -78,18 +85,10 @@ internal class RabbitMQConsumerTest {
 
     @Test
     fun testAckMessage() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val consumer = RabbitMQConsumer(connectionProperties, dispatcher, converter, type)
 
-        val consumer = RabbitMQConsumer(
-            connectionFactory, dispatcher, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.basicQos(any())
-            channel.basicConsume(queue.queueName, any() as DeliverCallback, any(), any())
-        }
         val message = PendingRabbitMQMessage("message", 1L, 1)
         runBlockingTest {
             consumer.ackMessage(message)
@@ -102,18 +101,10 @@ internal class RabbitMQConsumerTest {
 
     @Test
     fun testNackMessage() {
-        val connection = mockConnection()
-        val channel = mockChannelSuccessful(connection)
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val consumer = RabbitMQConsumer(connectionProperties, dispatcher, converter, type)
 
-        val consumer = RabbitMQConsumer(
-            connectionFactory, dispatcher, access, queue, converter, type
-        )
-        verify {
-            connectionFactory.createConnection()
-            connection.createChannel()
-            channel.basicQos(any())
-            channel.basicConsume(queue.queueName, any() as DeliverCallback, any(), any())
-        }
         val message = PendingRabbitMQMessage("message", 1L, 1)
         runBlockingTest {
             consumer.nackMessage(message)
@@ -124,25 +115,17 @@ internal class RabbitMQConsumerTest {
         }
     }
 
-    private fun mockConnection(): Connection {
+    private fun mockNewSuccessfulConnection(): Connection {
         val connection = mockk<Connection>(relaxed = true)
-        every { connectionFactory.createConnection() } returns connection
+        every { anyConstructed<ConnectionFactory>().newConnection() } returns connection
         every { connection.isOpen } returns true
         return connection
     }
 
-    private fun mockChannelSuccessful(connection: Connection): Channel {
+    private fun mockNewSuccessfulChannel(connection: Connection): Channel {
         val channel = mockk<Channel>(relaxed = true)
         every { connection.createChannel() } returns channel
         every { channel.isOpen } returns true
-        return channel
-    }
-
-    private fun mockChannelFailed(connection: Connection): Channel {
-        val channel = mockk<Channel>(relaxed = true)
-        every { connection.createChannel() } throws IOException()
-        every { channel.isOpen } returns false
-        every { connection.isOpen } returns false
         return channel
     }
 }
