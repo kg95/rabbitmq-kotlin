@@ -5,6 +5,5 @@ data class ConnectionProperties(
     val password: String,
     val host: String,
     val port: Int,
-    val virtualHost: String,
-    val queueName: String
+    val virtualHost: String
 )

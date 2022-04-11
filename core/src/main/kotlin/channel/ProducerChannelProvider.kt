@@ -8,9 +8,9 @@ import model.ConnectionProperties
 
 internal class ProducerChannelProvider(
     connectionProperties: ConnectionProperties,
+    private val queueName: String,
     private val returnListener: ReturnListener
 ) {
-    private val queueName: String = connectionProperties.queueName
     private val connectionProvider: ConnectionProvider
     private var channel: Channel
 

@@ -17,8 +17,9 @@ internal class RabbitMQProducerIT {
     private lateinit var channel: Channel
     private val messageBuffer: MutableList<ByteArray> = mutableListOf()
     private val connectionProperties = ConnectionProperties(
-        "rabbitmq", "rabbitmq", "localhost", 5672, "/", "testQueue"
+        "rabbitmq", "rabbitmq", "localhost", 5672, "/"
     )
+    private val queueName: String = "testQueue"
 
     @BeforeEach
     fun initialize() {
@@ -47,7 +48,7 @@ internal class RabbitMQProducerIT {
 
     @Test
     fun testSendMessages() {
-        val rabbitProducer = RabbitMQProducer(connectionProperties, DefaultConverter(), String::class.java)
+        val rabbitProducer = RabbitMQProducer(connectionProperties, queueName, DefaultConverter(), String::class.java)
 
         val messages = listOf("message1", "message2", "message3")
         runBlocking {

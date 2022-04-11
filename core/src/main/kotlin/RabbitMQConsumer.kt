@@ -8,8 +8,6 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import model.PendingRabbitMQMessage
-import model.Queue
-import model.RabbitMqAccess
 import util.getLogger
 import converter.Converter
 import kotlinx.coroutines.delay
@@ -26,6 +24,7 @@ private const val DEFAULT_ACK_ATTEMPT_DELAY_MILLIS = 1000L
 @ObsoleteCoroutinesApi
 open class RabbitMQConsumer<T>(
     connectionProperties: ConnectionProperties,
+    queueName: String,
     defaultDispatcher: CoroutineDispatcher,
     private val converter: Converter,
     private val type: Class<T>,
@@ -59,7 +58,7 @@ open class RabbitMQConsumer<T>(
             }
         }
         channelProvider = ConsumerChannelProvider(
-            connectionProperties, defaultDispatcher, deliveryCallback, prefetchCount
+            connectionProperties, queueName, defaultDispatcher, deliveryCallback, prefetchCount
         )
     }
 

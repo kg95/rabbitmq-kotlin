@@ -20,6 +20,7 @@ import java.io.IOException
 internal class ProducerChannelProviderTest {
 
     private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
+    private val queueName: String = "testQueue"
     private val returnListener: ReturnListener = mockk(relaxed = true)
 
     @BeforeEach
@@ -37,7 +38,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         ProducerChannelProvider(
-            connectionProperties, returnListener
+            connectionProperties, queueName, returnListener
         )
         verify {
             anyConstructed<ConnectionFactory>().username = connectionProperties.username
@@ -56,7 +57,7 @@ internal class ProducerChannelProviderTest {
     fun testInitialize_error() {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
         assertThrows<IOException> {
-            ProducerChannelProvider(connectionProperties, returnListener)
+            ProducerChannelProvider(connectionProperties, queueName, returnListener)
         }
     }
 
@@ -64,13 +65,13 @@ internal class ProducerChannelProviderTest {
     fun testPublish() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val channelProvider = ProducerChannelProvider(connectionProperties, returnListener)
+        val channelProvider = ProducerChannelProvider(connectionProperties, queueName, returnListener)
 
         val message = ByteArray(10)
         channelProvider.publish(message)
 
         verify {
-            channel.basicPublish("", connectionProperties.queueName, true, MessageProperties.PERSISTENT_BASIC, message)
+            channel.basicPublish("", queueName, true, MessageProperties.PERSISTENT_BASIC, message)
         }
     }
 
@@ -78,10 +79,10 @@ internal class ProducerChannelProviderTest {
     fun testPublish_error() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val channelProvider = ProducerChannelProvider(connectionProperties, returnListener)
+        val channelProvider = ProducerChannelProvider(connectionProperties, queueName, returnListener)
 
         every {
-            channel.basicPublish("", connectionProperties.queueName, true, MessageProperties.PERSISTENT_BASIC, any())
+            channel.basicPublish("", queueName, true, MessageProperties.PERSISTENT_BASIC, any())
         } throws IOException("testException")
 
         val message = ByteArray(10)
@@ -94,7 +95,7 @@ internal class ProducerChannelProviderTest {
     fun testRecreateChannel() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val channelProvider = ProducerChannelProvider(connectionProperties, returnListener)
+        val channelProvider = ProducerChannelProvider(connectionProperties, queueName, returnListener)
 
         every { connection.isOpen } returns false
         every { channel.isOpen } returns false
@@ -108,7 +109,7 @@ internal class ProducerChannelProviderTest {
     fun testRecreateChannelError() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val channelProvider = ProducerChannelProvider(connectionProperties, returnListener)
+        val channelProvider = ProducerChannelProvider(connectionProperties, queueName, returnListener)
 
         every { connection.isOpen } returns false
         every { channel.isOpen } returns false
@@ -123,7 +124,7 @@ internal class ProducerChannelProviderTest {
     fun testClose() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val channelProvider = ProducerChannelProvider(connectionProperties, returnListener)
+        val channelProvider = ProducerChannelProvider(connectionProperties, queueName, returnListener)
 
         channelProvider.close()
         verify {
@@ -136,7 +137,7 @@ internal class ProducerChannelProviderTest {
     fun testReturnCallBack() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        ProducerChannelProvider(connectionProperties, returnListener)
+        ProducerChannelProvider(connectionProperties, queueName, returnListener)
         verify {
             channel.addReturnListener(returnListener)
         }

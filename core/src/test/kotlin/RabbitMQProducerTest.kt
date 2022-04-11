@@ -25,6 +25,7 @@ import java.io.IOException
 class RabbitMQProducerTest {
 
     private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
+    private val queueName: String = "testQueue"
     private val converter: DefaultConverter = mockk(relaxed = true)
     private val type = String::class.java
 
@@ -42,7 +43,7 @@ class RabbitMQProducerTest {
     fun testInitialize() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        RabbitMQProducer(connectionProperties, converter, type)
+        RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         verify {
             anyConstructed<ConnectionFactory>().username = connectionProperties.username
@@ -61,7 +62,7 @@ class RabbitMQProducerTest {
     fun testCreation_error() {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
         assertThrows<IOException> {
-            RabbitMQProducer(connectionProperties, converter, type)
+            RabbitMQProducer(connectionProperties, queueName, converter, type)
         }
     }
 
@@ -69,7 +70,7 @@ class RabbitMQProducerTest {
     fun testClose() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(connectionProperties, converter, type)
+        val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         producer.close()
 
@@ -82,7 +83,7 @@ class RabbitMQProducerTest {
     fun testSendMessages() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(connectionProperties, converter, type)
+        val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         val messages = listOf( "message1", "message2", "message3")
         for (message in messages) {
@@ -110,7 +111,7 @@ class RabbitMQProducerTest {
     fun testSendMessages_conversionError() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(connectionProperties, converter, type)
+        val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         val messages = listOf( "message")
         every { converter.toByteArray(messages.first(), type) } throws ConverterException("testError")
@@ -126,7 +127,7 @@ class RabbitMQProducerTest {
     fun testSendMessages_rabbitMQError() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(connectionProperties, converter, type)
+        val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         val messages = listOf( "message1", "message2", "message3")
         for (message in messages) {
@@ -147,7 +148,7 @@ class RabbitMQProducerTest {
     fun testSendMessages_reconnect() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(connectionProperties, converter, type)
+        val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         val messages = listOf( "message1")
         every { converter.toByteArray(messages.first(), type) } returns messages.first().toByteArray()
@@ -174,7 +175,7 @@ class RabbitMQProducerTest {
     fun testSendMessage() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(connectionProperties, converter, type)
+        val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         val message = "message"
         every { converter.toByteArray(message, type) } returns message.toByteArray()
@@ -186,7 +187,7 @@ class RabbitMQProducerTest {
         val caughtMessage = slot<ByteArray>()
         verify(exactly = 1) {
             channel.basicPublish(
-                "", connectionProperties.queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage)
+                "", queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage)
             )
         }
         assertThat(String(caughtMessage.captured)).isEqualTo(message)

@@ -18,8 +18,9 @@ internal class RabbitMQConsumerIT {
 
     private lateinit var channel: Channel
     private val connectionProperties = ConnectionProperties(
-        "rabbitmq", "rabbitmq", "localhost", 5672, "/", "testQueue"
+        "rabbitmq", "rabbitmq", "localhost", 5672, "/"
     )
+    private val queueName: String = "testQueue"
 
     @BeforeEach
     fun initialize() {
@@ -43,7 +44,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -64,7 +65,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testAckMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -87,7 +88,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testNackMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -110,7 +111,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testClose() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
