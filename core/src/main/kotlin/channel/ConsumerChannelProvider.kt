@@ -95,6 +95,9 @@ internal class ConsumerChannelProvider(
     fun channelIsOpen() = channel.isOpen
 
     fun recreateChannel() {
+        if(!channel.isOpen) {
+            channel = createChannel()
+        }
         startWatchdog()
     }
 
