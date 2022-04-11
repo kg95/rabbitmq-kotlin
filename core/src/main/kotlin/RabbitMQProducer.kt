@@ -6,18 +6,15 @@ import converter.Converter
 import exception.RabbitMqMessageReturnedException
 import kotlinx.coroutines.runBlocking
 import model.ConnectionProperties
+import model.ProducerProperties
 import util.getLogger
-
-private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
-private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
     connectionProperties: ConnectionProperties,
     queueName: String,
     private val converter: Converter,
     private val type: Class<T>,
-    private val publishAttemptCount: Int = DEFAULT_PUBLISH_ATTEMPT_COUNT,
-    private val publishAttemptDelayMillis: Long = DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS,
+    private val producerProperties: ProducerProperties = ProducerProperties(),
     private val logger: Logger = getLogger(RabbitMQProducer::class.java)
 ) {
     private var channelProvider: ProducerChannelProvider
@@ -54,7 +51,7 @@ class RabbitMQProducer<T: Any> (
     private suspend fun publish(message: ByteArray) {
         logger.debug("send message: {}", String(message, Charsets.UTF_8))
         var lastException: Throwable? = null
-        repeat(publishAttemptCount) {
+        repeat(producerProperties.publishAttemptCount) {
             try {
                 channelProvider.recreateChannel()
                 channelProvider.publish(message)
@@ -62,10 +59,10 @@ class RabbitMQProducer<T: Any> (
             } catch (e: Throwable) {
                 lastException = e
             }
-            delay(publishAttemptDelayMillis)
+            delay(producerProperties.publishAttemptDelayMillis)
         }
         lastException?.let {
-            logger.error("Failed to publish message $publishAttemptCount times", it)
+            logger.error("Failed to publish message ${producerProperties.publishAttemptCount} times", it)
             throw it
         }
     }
