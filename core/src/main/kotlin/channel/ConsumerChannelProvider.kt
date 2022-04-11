@@ -13,20 +13,17 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import model.ConnectionProperties
+import model.ConsumerChannelProperties
 
-private const val WATCH_DOG_INTERVAL_MILLIS = 5000L
 private const val MAX_PREFETCH_COUNT = 65000
-private const val CHANNEL_RENEW_TIMEOUT_MILLIS = 10000L
-private const val CHANNEL_RENEW_DELAY_MILLIS = 5000L
 
-class ConsumerChannelProvider(
+internal class ConsumerChannelProvider(
     connectionProperties: ConnectionProperties,
     private val queueName: String,
     dispatcher: CoroutineDispatcher,
     private val deliverCallback: DeliverCallback,
-    private val prefetchCount: Int,
+    private val properties: ConsumerChannelProperties
 ) {
     private val connectionProvider: ConnectionProvider
     private var channel: Channel
@@ -35,10 +32,10 @@ class ConsumerChannelProvider(
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())
 
     init {
-        if(prefetchCount  !in 1..MAX_PREFETCH_COUNT) {
-            error(
-                "Invalid prefetch count $prefetchCount. Prefetch count must be between 1 and $MAX_PREFETCH_COUNT"
-            )
+        if(properties.prefetchCount  !in 1..MAX_PREFETCH_COUNT) {
+            val message = "Invalid prefetch count ${properties.prefetchCount}." +
+                    "Prefetch count must be between 1 and $MAX_PREFETCH_COUNT"
+            error(message)
         }
         connectionProvider = ConnectionProvider(connectionProperties)
         channel = createChannel()
@@ -53,7 +50,7 @@ class ConsumerChannelProvider(
             val shutdownCallback = ConsumerShutdownSignalCallback { _, _ ->
                 closeChannel(this@apply)
             }
-            basicQos(prefetchCount)
+            basicQos(properties.prefetchCount)
             basicConsume(queueName, deliverCallback, cancelCallback, shutdownCallback)
         }
     }
@@ -74,21 +71,19 @@ class ConsumerChannelProvider(
         }
         watchDog = watchDogScope.launch {
             while (isActive) {
-                delay(WATCH_DOG_INTERVAL_MILLIS)
-                withTimeoutOrNull(CHANNEL_RENEW_TIMEOUT_MILLIS) {
-                    tryRenew()
-                }
+                delay(properties.watchDogIntervalMillis)
+                tryRenew()
             }
         }
     }
 
-    private suspend fun tryRenew() {
-        try {
-            if (!channel.isOpen) {
+    private fun tryRenew() {
+        if (!channel.isOpen) {
+            try {
                 renewChannel()
+            } catch (e: Throwable) {
+                return
             }
-        } catch (e: Throwable) {
-            delay(CHANNEL_RENEW_DELAY_MILLIS)
         }
     }
 
