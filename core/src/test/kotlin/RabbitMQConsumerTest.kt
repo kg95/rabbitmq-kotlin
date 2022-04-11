@@ -13,6 +13,7 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
 import model.ConnectionProperties
+import model.ConsumerChannelProperties
 import model.PendingRabbitMQMessage
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -44,7 +45,12 @@ internal class RabbitMQConsumerTest {
     fun testInitialize() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        RabbitMQConsumer(connectionProperties, queueName, dispatcher, converter, type)
+        val prefetchCount = 1000
+        val channelProperties = ConsumerChannelProperties(prefetchCount)
+        RabbitMQConsumer(
+            connectionProperties, queueName, dispatcher,
+            converter, type, consumerChannelProperties = channelProperties
+        )
 
         verify {
             anyConstructed<ConnectionFactory>().username = connectionProperties.username
@@ -55,7 +61,7 @@ internal class RabbitMQConsumerTest {
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
             anyConstructed<ConnectionFactory>().newConnection()
             connection.createChannel()
-            channel.basicQos(any())
+            channel.basicQos(prefetchCount)
             channel.basicConsume(queueName, any() as DeliverCallback, any(), any())
         }
     }
