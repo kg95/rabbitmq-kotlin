@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import java.net.ConnectException
 
 @ExperimentalCoroutinesApi
 internal class ConsumerChannelProviderTest {
@@ -63,9 +64,9 @@ internal class ConsumerChannelProviderTest {
     }
 
     @Test
-    fun testInitialize_error() {
-        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
-        assertThrows<IOException> {
+    fun testInitialize_connectionError() {
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
+        assertThrows<ConnectException> {
             ConsumerChannelProvider(
                 connectionProperties, queueName, testDispatcher,
                 testDelivery, ConsumerChannelProperties(testPrefetchCount)

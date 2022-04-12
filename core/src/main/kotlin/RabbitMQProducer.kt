@@ -7,6 +7,7 @@ import exception.RabbitMqMessageReturnedException
 import kotlinx.coroutines.runBlocking
 import model.ConnectionProperties
 import model.ProducerProperties
+import util.convertToRabbitMQException
 import util.getLogger
 
 class RabbitMQProducer<T: Any> (
@@ -27,7 +28,11 @@ class RabbitMQProducer<T: Any> (
             logger.error(message, RabbitMqMessageReturnedException(message))
             runBlocking { publish(body) }
         }
-        channelProvider = ProducerChannelProvider(connectionProperties, queueName, onReturn)
+        try {
+            channelProvider = ProducerChannelProvider(connectionProperties, queueName, onReturn)
+        } catch (e: Throwable) {
+            throw convertToRabbitMQException(e)
+        }
     }
 
     suspend fun sendMessage(message: T) {

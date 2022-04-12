@@ -2,12 +2,15 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DeliverCallback
+import com.rabbitmq.client.ShutdownSignalException
 import converter.DefaultConverter
+import exception.RabbitMQException
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
@@ -15,11 +18,13 @@ import kotlinx.coroutines.test.runBlockingTest
 import model.ConnectionProperties
 import model.ConsumerChannelProperties
 import model.PendingRabbitMQMessage
+import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import java.net.ConnectException
 
 @ExperimentalCoroutinesApi
 @ObsoleteCoroutinesApi
@@ -67,11 +72,32 @@ internal class RabbitMQConsumerTest {
     }
 
     @Test
-    fun testCreation_error() {
-        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
-        assertThrows<IOException> {
+    fun testCreation_connectionError() {
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
+        val exception = assertThrows<RabbitMQException> {
             RabbitMQConsumer(connectionProperties, queueName, dispatcher, converter, type)
         }
+        val message = "Failed to connect to rabbitmq message broker. Ensure that the broker " +
+                "is running and your ConnectionProperties are set correctly"
+        assertThat(exception.message).isEqualTo(message)
+        assertThat(exception.cause).isInstanceOf(ConnectException::class.java)
+    }
+
+    @Test
+    fun testInitialization_queueDoesNotExist() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        every {
+            channel.basicConsume(queueName, any() as DeliverCallback, any(), any())
+        } throws IOException(null, ShutdownSignalException(false, false, null, null))
+        val exception = assertThrows<RabbitMQException> {
+            RabbitMQConsumer(
+                connectionProperties, queueName, Dispatchers.Default,
+                DefaultConverter(), String::class.java
+            )
+        }
+        assertThat(exception.message).isEqualTo("IOException during rabbitmq operation, channel got shut down")
+        assertThat(exception.cause).isInstanceOf(ShutdownSignalException::class.java)
     }
 
     @Test

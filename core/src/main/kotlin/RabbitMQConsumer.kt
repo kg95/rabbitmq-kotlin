@@ -15,8 +15,11 @@ import model.ConnectionProperties
 import model.ConsumerChannelProperties
 import model.ConsumerProperties
 import org.slf4j.Logger
+import util.convertToRabbitMQException
 import java.time.Duration
 import javax.annotation.PreDestroy
+
+private const val MAX_PREFETCH_COUNT = 65000
 
 @ObsoleteCoroutinesApi
 open class RabbitMQConsumer<T>(
@@ -41,6 +44,7 @@ open class RabbitMQConsumer<T>(
     private lateinit var channelProvider: ConsumerChannelProvider
 
     init {
+        validatePrefetchCount(consumerChannelProperties.prefetchCount)
         val deliveryCallback = DeliverCallback { _, message ->
             runBlocking {
                 val transformed = converter.toObject(message.body, type)
@@ -53,14 +57,27 @@ open class RabbitMQConsumer<T>(
                 }
             }
         }
-        channelProvider = ConsumerChannelProvider(
-            connectionProperties, queueName, defaultDispatcher, deliveryCallback, consumerChannelProperties
-        )
+        try {
+            channelProvider = ConsumerChannelProvider(
+                connectionProperties, queueName, defaultDispatcher, deliveryCallback, consumerChannelProperties
+            )
+        } catch (e: Throwable) {
+            throw convertToRabbitMQException(e)
+        }
+
     }
 
     private fun resendMessage(message: PendingRabbitMQMessage<T>) {
         runBlocking {
             messageBuffer.send(message)
+        }
+    }
+
+    private fun validatePrefetchCount(prefetchCount: Int) {
+        if(prefetchCount !in 1..MAX_PREFETCH_COUNT) {
+            val message = "Invalid prefetch count $prefetchCount." +
+                    "Prefetch count must be between 1 and $MAX_PREFETCH_COUNT"
+            error(message)
         }
     }
 

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import java.net.ConnectException
 
 internal class ConnectionProviderTest {
     private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
@@ -51,9 +52,9 @@ internal class ConnectionProviderTest {
     }
 
     @Test
-    fun testInitialization_error() {
+    fun testInitialization_connectionError() {
         mockFailedConnection()
-        assertThrows<IOException> { ConnectionProvider(connectionProperties) }
+        assertThrows<ConnectException> { ConnectionProvider(connectionProperties) }
     }
 
     @Test
@@ -111,6 +112,6 @@ internal class ConnectionProviderTest {
         mockkConstructor(ConnectionFactory::class)
         every {
             anyConstructed<ConnectionFactory>().newConnection()
-        } throws IOException()
+        } throws ConnectException()
     }
 }

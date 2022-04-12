@@ -5,6 +5,7 @@ import com.rabbitmq.client.MessageProperties
 import com.rabbitmq.client.ReturnListener
 import converter.DefaultConverter
 import exception.ConverterException
+import exception.RabbitMQException
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -20,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import java.io.IOException
+import java.net.ConnectException
 
 @ExperimentalCoroutinesApi
 class RabbitMQProducerTest {
@@ -59,11 +61,15 @@ class RabbitMQProducerTest {
     }
 
     @Test
-    fun testCreation_error() {
-        every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
-        assertThrows<IOException> {
+    fun testCreation_connectionError() {
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
+        val exception = assertThrows<RabbitMQException> {
             RabbitMQProducer(connectionProperties, queueName, converter, type)
         }
+        val message = "Failed to connect to rabbitmq message broker. Ensure that the broker " +
+                "is running and your ConnectionProperties are set correctly"
+        assertThat(exception.message).isEqualTo(message)
+        assertThat(exception.cause).isInstanceOf(ConnectException::class.java)
     }
 
     @Test
