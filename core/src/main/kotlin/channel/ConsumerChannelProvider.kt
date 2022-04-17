@@ -5,7 +5,6 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.ConsumerShutdownSignalCallback
 import com.rabbitmq.client.DeliverCallback
 import com.rabbitmq.client.ShutdownListener
-import connection.ConnectionProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -15,51 +14,38 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import model.ConnectionProperties
-import model.ConsumerChannelProperties
 
 internal class ConsumerChannelProvider(
     connectionProperties: ConnectionProperties,
     private val queueName: String,
     dispatcher: CoroutineDispatcher,
     private val deliverCallback: DeliverCallback,
-    private val properties: ConsumerChannelProperties
-) {
-    private val connectionProvider: ConnectionProvider
-    private var channel: Channel
+    private val prefetchCount: Int,
+    private val watchDogIntervalMillis: Long
+): AbstractChannelProvider(connectionProperties) {
 
     private var watchDog: Job? = null
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())
 
     init {
-        connectionProvider = ConnectionProvider(connectionProperties)
         channel = createChannel()
         startWatchdog()
     }
 
-    private fun createChannel(): Channel {
-        return connectionProvider.createChannel().apply {
+    override fun createChannel(): Channel {
+        return super.createChannel().apply {
             val shutDownListener = ShutdownListener {
-                closeChannel(this@apply)
+                super.closeChannel(this@apply)
             }
             val cancelCallback = CancelCallback {
-                closeChannel(this@apply)
+                super.closeChannel(this@apply)
             }
             val shutdownCallback = ConsumerShutdownSignalCallback { _, _ ->
-                closeChannel(this@apply)
+                super.closeChannel(this@apply)
             }
             addShutdownListener(shutDownListener)
-            basicQos(properties.prefetchCount)
+            basicQos(prefetchCount)
             basicConsume(queueName, deliverCallback, cancelCallback, shutdownCallback)
-        }
-    }
-
-    private fun closeChannel(channel: Channel) {
-        try {
-            if(channel.isOpen) {
-                channel.close()
-            }
-        } catch (e: Throwable) {
-            return
         }
     }
 
@@ -69,7 +55,7 @@ internal class ConsumerChannelProvider(
         }
         watchDog = watchDogScope.launch {
             while (isActive) {
-                delay(properties.watchDogIntervalMillis)
+                delay(watchDogIntervalMillis)
                 tryRenew()
             }
         }
@@ -79,7 +65,7 @@ internal class ConsumerChannelProvider(
         if (!channel.isOpen) {
             try {
                 renewChannel()
-            } catch (e: Throwable) {
+            } catch (_: Throwable) {
                 return
             }
         }
@@ -90,23 +76,29 @@ internal class ConsumerChannelProvider(
         channel = createChannel()
     }
 
-    fun channelIsOpen() = channel.isOpen
-
-    fun recreateChannel() {
-        if(!channel.isOpen) {
-            channel = createChannel()
+    fun tryAck(deliveryTag: Long): Boolean {
+        return try {
+            super.recreateChannel()
+            channel.basicAck(deliveryTag, false)
+            true
+        } catch (_: Throwable) {
+            false
         }
-        startWatchdog()
     }
 
-    fun tryAck(deliveryTag: Long) =
-        channel.basicAck(deliveryTag, false)
 
-    fun tryNack(deliveryTag: Long) =
-        channel.basicNack(deliveryTag, false, true)
+    fun tryNack(deliveryTag: Long): Boolean {
+        return try {
+            super.recreateChannel()
+            channel.basicNack(deliveryTag, false, true)
+            true
+        } catch (_: Throwable) {
+            false
+        }
+    }
 
-    fun close() {
+    override fun close() {
         watchDogScope.cancel()
-        connectionProvider.close()
+        super.close()
     }
 }
