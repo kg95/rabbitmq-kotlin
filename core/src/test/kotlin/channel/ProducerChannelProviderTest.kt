@@ -40,7 +40,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         ProducerChannelProvider(
-            rabbitMQAccess, queueName, virtualHost, returnListener
+            rabbitMQAccess, virtualHost, queueName, returnListener
         )
         verify {
             anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
