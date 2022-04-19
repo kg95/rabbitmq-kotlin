@@ -1,3 +1,5 @@
+package producer
+
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.ConsumerShutdownSignalCallback
@@ -50,7 +52,6 @@ internal class RabbitMQProducerIT {
     @Test
     fun testSendMessages() {
         val rabbitProducer = RabbitMQProducer(connectionProperties, queueName, DefaultConverter(), String::class.java)
-
         val messages = listOf("message1", "message2", "message3")
         runBlocking {
             val response = rabbitProducer.sendMessages(messages)

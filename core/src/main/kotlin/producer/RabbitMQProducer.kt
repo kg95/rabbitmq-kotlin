@@ -1,3 +1,5 @@
+package producer
+
 import channel.ProducerChannelProvider
 import com.rabbitmq.client.ReturnListener
 import kotlinx.coroutines.delay
