@@ -14,6 +14,7 @@ private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
     connectionProperties: ConnectionProperties,
+    virtualHost: String,
     queueName: String,
     private val converter: Converter,
     private val type: Class<T>,
@@ -27,7 +28,9 @@ class RabbitMQProducer<T: Any> (
             runBlocking { publish(body) }
         }
         try {
-            channelProvider = ProducerChannelProvider(connectionProperties, queueName, onReturn)
+            channelProvider = ProducerChannelProvider(
+                connectionProperties, virtualHost, queueName, onReturn
+            )
         } catch (e: Throwable) {
             throw convertToRabbitMQException(e)
         }

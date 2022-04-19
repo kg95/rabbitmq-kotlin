@@ -22,8 +22,9 @@ internal class RabbitMQConsumerIT {
 
     private lateinit var channel: Channel
     private val connectionProperties = ConnectionProperties(
-        "rabbitmq", "rabbitmq", "localhost", 5672, "/"
+        "rabbitmq", "rabbitmq", "localhost", 5672,
     )
+    private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
 
     @BeforeEach
@@ -48,7 +49,8 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -71,7 +73,8 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages_invalidMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, queueName, Dispatchers.Default, JacksonConverter(), Int::class.java
+            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            JacksonConverter(), Int::class.java
         )
 
         val invalidMessage = false
@@ -94,7 +97,8 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages_partiallyInvalidMessages() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, queueName, Dispatchers.Default, JacksonConverter(), Int::class.java
+            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            JacksonConverter(), Int::class.java
         )
 
         val validMessage = 1
@@ -130,7 +134,8 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testAckMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -156,7 +161,8 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testNackMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -182,7 +188,8 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testClose() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, queueName, Dispatchers.Default, DefaultConverter(), String::class.java
+            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            DefaultConverter(), String::class.java
         )
 
         val messages = listOf("message1", "message2", "message3")

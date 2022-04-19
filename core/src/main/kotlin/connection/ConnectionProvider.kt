@@ -6,7 +6,8 @@ import com.rabbitmq.client.ConnectionFactory
 import model.ConnectionProperties
 
 internal class ConnectionProvider(
-    private val connectionProperties: ConnectionProperties
+    private val connectionProperties: ConnectionProperties,
+    private val virtualHost: String
 ) {
     private val connectionFactory: ConnectionFactory = ConnectionFactory()
     private var connection: Connection
@@ -17,7 +18,7 @@ internal class ConnectionProvider(
             password = connectionProperties.password
             host = connectionProperties.host
             port = connectionProperties.port
-            virtualHost = connectionProperties.virtualHost
+            virtualHost = virtualHost
             isAutomaticRecoveryEnabled = false
         }
         connection = createConnection()

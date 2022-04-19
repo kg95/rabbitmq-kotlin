@@ -20,6 +20,7 @@ private const val DEFAULT_WATCH_DOG_INTERVAL_MILLIS = 5000L
 
 class RabbitMQConsumer<T: Any>(
     connectionProperties: ConnectionProperties,
+    virtualHost: String,
     queueName: String,
     defaultDispatcher: CoroutineDispatcher,
     private val converter: Converter,
@@ -45,8 +46,8 @@ class RabbitMQConsumer<T: Any>(
         }
         try {
             channelProvider = ConsumerChannelProvider(
-                connectionProperties, queueName, defaultDispatcher, deliveryCallback,
-                prefetchCount, watchDogIntervalMillis
+                connectionProperties, virtualHost, queueName, defaultDispatcher,
+                deliveryCallback, prefetchCount, watchDogIntervalMillis
             )
         } catch (e: Throwable) {
             throw convertToRabbitMQException(e)

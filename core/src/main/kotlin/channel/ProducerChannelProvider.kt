@@ -9,9 +9,10 @@ import model.ConnectionProperties
 
 internal class ProducerChannelProvider(
     connectionProperties: ConnectionProperties,
+    virtualHost: String,
     private val queueName: String,
     private val returnListener: ReturnListener
-): AbstractChannelProvider(connectionProperties) {
+): AbstractChannelProvider(connectionProperties, virtualHost) {
 
     init {
         channel = createChannel()

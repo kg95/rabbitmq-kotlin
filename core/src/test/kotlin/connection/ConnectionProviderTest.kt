@@ -19,6 +19,7 @@ import java.net.ConnectException
 
 internal class ConnectionProviderTest {
     private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
+    private val virtualHost: String = "/"
     private val connection: Connection = mockk(relaxed = true)
     private val channel: Channel = mockk(relaxed = true)
 
@@ -39,14 +40,14 @@ internal class ConnectionProviderTest {
     @Test
     fun testInitialization() {
         mockSuccessfulConnection()
-        ConnectionProvider(connectionProperties)
+        ConnectionProvider(connectionProperties, virtualHost)
         verify {
             anyConstructed<ConnectionFactory>().newConnection()
             anyConstructed<ConnectionFactory>().username = connectionProperties.username
             anyConstructed<ConnectionFactory>().password = connectionProperties.password
             anyConstructed<ConnectionFactory>().host = connectionProperties.host
             anyConstructed<ConnectionFactory>().port = connectionProperties.port
-            anyConstructed<ConnectionFactory>().virtualHost = connectionProperties.virtualHost
+            anyConstructed<ConnectionFactory>().virtualHost = virtualHost
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
         }
     }
@@ -54,14 +55,16 @@ internal class ConnectionProviderTest {
     @Test
     fun testInitialization_connectionError() {
         mockFailedConnection()
-        assertThrows<ConnectException> { ConnectionProvider(connectionProperties) }
+        assertThrows<ConnectException> {
+            ConnectionProvider(connectionProperties, virtualHost)
+        }
     }
 
     @Test
     fun testCreateChannel() {
         mockSuccessfulConnection()
         val connectionProvider = ConnectionProvider(
-            connectionProperties
+            connectionProperties, virtualHost
         )
         val returnedChannel = connectionProvider.createChannel()
         verify {
@@ -75,7 +78,7 @@ internal class ConnectionProviderTest {
     fun testCreateChannel_error() {
         mockSuccessfulConnection()
         val connectionProvider = ConnectionProvider(
-            connectionProperties
+            connectionProperties, virtualHost
         )
         verify { anyConstructed<ConnectionFactory>().newConnection() }
 
@@ -89,7 +92,7 @@ internal class ConnectionProviderTest {
     fun testClose() {
         mockSuccessfulConnection()
         val connectionProvider = ConnectionProvider(
-            connectionProperties
+            connectionProperties, virtualHost
         )
         verify { anyConstructed<ConnectionFactory>().newConnection() }
 

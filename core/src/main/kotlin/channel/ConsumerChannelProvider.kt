@@ -17,12 +17,13 @@ import model.ConnectionProperties
 
 internal class ConsumerChannelProvider(
     connectionProperties: ConnectionProperties,
+    virtualHost: String,
     private val queueName: String,
     dispatcher: CoroutineDispatcher,
     private val deliverCallback: DeliverCallback,
     private val prefetchCount: Int,
     private val watchDogIntervalMillis: Long
-): AbstractChannelProvider(connectionProperties) {
+): AbstractChannelProvider(connectionProperties, virtualHost) {
 
     private var watchDog: Job? = null
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())

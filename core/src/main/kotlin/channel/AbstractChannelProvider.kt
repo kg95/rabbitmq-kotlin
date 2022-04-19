@@ -5,9 +5,10 @@ import connection.ConnectionProvider
 import model.ConnectionProperties
 
 internal abstract class AbstractChannelProvider(
-    connectionProperties: ConnectionProperties
+    connectionProperties: ConnectionProperties,
+    virtualHost: String
 ) {
-    private val connectionProvider = ConnectionProvider(connectionProperties)
+    private val connectionProvider = ConnectionProvider(connectionProperties, virtualHost)
     protected lateinit var channel: Channel
 
     protected open fun createChannel(): Channel {
