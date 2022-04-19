@@ -5,6 +5,7 @@ import com.rabbitmq.client.DeliverCallback
 import converter.DefaultConverter
 import kotlinx.coroutines.runBlocking
 import model.ConnectionProperties
+import model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterEach
@@ -52,7 +53,8 @@ internal class RabbitMQProducerIT {
 
         val messages = listOf("message1", "message2", "message3")
         runBlocking {
-            rabbitProducer.sendMessages(messages)
+            val response = rabbitProducer.sendMessages(messages)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
         }
 
         await.atMost(1000, TimeUnit.MILLISECONDS).until {

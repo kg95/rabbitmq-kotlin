@@ -15,6 +15,7 @@ import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
 import model.ConnectionProperties
+import model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -97,19 +98,19 @@ class RabbitMQProducerTest {
         }
 
         runBlockingTest {
-            producer.sendMessages(messages)
+            val response = producer.sendMessages(messages)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
+            val successfulMessages = (response as Response.Success).value
+            assertThat(successfulMessages.size).isEqualTo(3)
+            for (message in successfulMessages) {
+                assertThat(message).isIn(messages)
+            }
         }
 
-        val caughtMessages = mutableListOf<ByteArray>()
         verify(exactly = 3) {
             channel.basicPublish(
-                "", any(), true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessages)
+                "", any(), true, MessageProperties.PERSISTENT_BASIC, any()
             )
-        }
-
-        assertThat(caughtMessages.size).isEqualTo(3)
-        for (message in caughtMessages) {
-            assertThat(String(message)).isIn(messages)
         }
     }
 
@@ -120,12 +121,14 @@ class RabbitMQProducerTest {
         val producer = RabbitMQProducer(connectionProperties, queueName, converter, type)
 
         val messages = listOf( "message")
-        every { converter.toByteArray(messages.first(), type) } throws ConverterException("testError")
+        every { converter.toByteArray(messages.first(), type) } throws IllegalStateException()
 
         runBlockingTest {
-            assertThrows<ConverterException> {
-                producer.sendMessages(messages)
-            }
+            val response = producer.sendMessages(messages)
+            assertThat(response).isInstanceOf(Response.Failure::class.java)
+            assertThat(
+                (response as Response.Failure).error
+            ).isInstanceOf(IllegalStateException::class.java)
         }
     }
 
@@ -144,9 +147,11 @@ class RabbitMQProducerTest {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
 
         runBlockingTest {
-            assertThrows<IOException> {
-                producer.sendMessages(messages)
-            }
+            val response = producer.sendMessages(messages)
+            assertThat(response).isInstanceOf(Response.Failure::class.java)
+            assertThat(
+                (response as Response.Failure).error
+            ).isInstanceOf(RabbitMQException::class.java)
         }
     }
 
@@ -165,16 +170,18 @@ class RabbitMQProducerTest {
         val newChannel = mockNewSuccessfulChannel(newConnection)
 
         runBlockingTest {
-            producer.sendMessages(messages)
+            val response = producer.sendMessages(messages)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
+            val successfulMessages = (response as Response.Success).value
+            assertThat(successfulMessages.size).isEqualTo(1)
+            assertThat(successfulMessages.first()).isEqualTo(messages.first())
         }
 
-        val caughtMessage = slot<ByteArray>()
         verify(exactly = 1) {
             newChannel.basicPublish(
-                "", any(), true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage)
+                "", any(), true, MessageProperties.PERSISTENT_BASIC, any()
             )
         }
-        assertThat(String(caughtMessage.captured)).isEqualTo(messages.first())
     }
 
     @Test
@@ -187,16 +194,17 @@ class RabbitMQProducerTest {
         every { converter.toByteArray(message, type) } returns message.toByteArray()
 
         runBlockingTest {
-            producer.sendMessage(message)
+            val response = producer.sendMessage(message)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
+            val successfulMessage = (response as Response.Success).value
+            assertThat(successfulMessage).isEqualTo(message)
         }
 
-        val caughtMessage = slot<ByteArray>()
         verify(exactly = 1) {
             channel.basicPublish(
-                "", queueName, true, MessageProperties.PERSISTENT_BASIC, capture(caughtMessage)
+                "", queueName, true, MessageProperties.PERSISTENT_BASIC, any()
             )
         }
-        assertThat(String(caughtMessage.captured)).isEqualTo(message)
     }
 
     private fun mockNewSuccessfulConnection(): Connection {

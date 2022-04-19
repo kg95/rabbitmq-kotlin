@@ -2,10 +2,12 @@ import com.rabbitmq.client.Channel
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.MessageProperties
 import converter.DefaultConverter
+import converter.JacksonConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import model.ConnectionProperties
+import model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterEach
@@ -53,12 +55,73 @@ internal class RabbitMQConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1, 10)
+            val response = consumer.collectNextMessages(1000, 10)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
 
+            val returnedMessages = (response as Response.Success).value
             assertThat(returnedMessages.size).isEqualTo(3)
             for (message in returnedMessages) {
                 assertThat(message.value).isIn(messages)
             }
+        }
+    }
+
+    @Test
+    fun testCollectNextMessages_invalidMessage() {
+        val consumer = RabbitMQConsumer(
+            connectionProperties, queueName, Dispatchers.Default, JacksonConverter(), Int::class.java
+        )
+
+        val invalidMessage = false
+        channel.basicPublish(
+            "", "testQueue", true, MessageProperties.PERSISTENT_BASIC,
+            invalidMessage.toString().toByteArray()
+        )
+
+        runBlocking {
+            val response = consumer.collectNextMessages(1000, 10)
+            assertThat(response).isInstanceOf(Response.Failure::class.java)
+        }
+
+        consumer.close()
+        await.atMost(5000, TimeUnit.MILLISECONDS).until {
+            channel.messageCount("testQueue") == 0L
+        }
+    }
+
+    @Test
+    fun testCollectNextMessages_partiallyInvalidMessages() {
+        val consumer = RabbitMQConsumer(
+            connectionProperties, queueName, Dispatchers.Default, JacksonConverter(), Int::class.java
+        )
+
+        val validMessage = 1
+        channel.basicPublish(
+            "", "testQueue", true, MessageProperties.PERSISTENT_BASIC,
+            validMessage.toString().toByteArray()
+        )
+        val invalidMessage = false
+        channel.basicPublish(
+            "", "testQueue", true, MessageProperties.PERSISTENT_BASIC,
+            invalidMessage.toString().toByteArray()
+        )
+
+        runBlocking {
+            val responseFailure = consumer.collectNextMessages(1000, 10)
+            assertThat(responseFailure).isInstanceOf(Response.Failure::class.java)
+
+            val responseSuccess = consumer.collectNextMessages(1000, 10)
+            assertThat(responseSuccess).isInstanceOf(Response.Success::class.java)
+
+            val pendingList = (responseSuccess as Response.Success).value
+            assertThat(pendingList.size).isEqualTo(1)
+            assertThat(pendingList.first().value).isEqualTo(validMessage)
+            consumer.ackMessage(pendingList.first())
+        }
+
+        consumer.close()
+        await.atMost(5000, TimeUnit.MILLISECONDS).until {
+            channel.messageCount("testQueue") == 0L
         }
     }
 
@@ -74,15 +137,18 @@ internal class RabbitMQConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1, 10)
+            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+                (it as Response.Success).value
+            }
             for (message in returnedMessages) {
-                consumer.ackMessage(message)
+                val response = consumer.ackMessage(message)
+                assertThat(response).isInstanceOf(Response.Success::class.java)
             }
         }
+        consumer.close()
         await.atMost(5000, TimeUnit.MILLISECONDS).until {
             channel.messageCount("testQueue") == 0L
         }
-        assertThat(channel.messageCount("testQueue")).isEqualTo(0)
     }
 
     @Test
@@ -97,9 +163,12 @@ internal class RabbitMQConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1, 10)
+            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+                (it as Response.Success).value
+            }
             for (message in returnedMessages) {
-                consumer.nackMessage(message)
+                val response = consumer.nackMessage(message)
+                assertThat(response).isInstanceOf(Response.Success::class.java)
             }
         }
         consumer.close()

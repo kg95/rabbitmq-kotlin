@@ -16,8 +16,8 @@ import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
 import model.ConnectionProperties
-import model.ConsumerChannelProperties
 import model.PendingRabbitMQMessage
+import model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -51,10 +51,9 @@ internal class RabbitMQConsumerTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val prefetchCount = 1000
-        val channelProperties = ConsumerChannelProperties(prefetchCount)
         RabbitMQConsumer(
             connectionProperties, queueName, dispatcher,
-            converter, type, consumerChannelProperties = channelProperties
+            converter, type, prefetchCount
         )
 
         verify {
@@ -119,9 +118,31 @@ internal class RabbitMQConsumerTest {
         val channel = mockNewSuccessfulChannel(connection)
         val consumer = RabbitMQConsumer(connectionProperties, queueName, dispatcher, converter, type)
 
-        val message = PendingRabbitMQMessage("message", 1L, 1)
+        val message = PendingRabbitMQMessage("message", 1L)
         runBlockingTest {
-            consumer.ackMessage(message)
+            val response = consumer.ackMessage(message)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
+            assertThat((response as Response.Success).value).isEqualTo(message)
+        }
+
+        verify {
+            channel.basicAck(1, false)
+        }
+    }
+
+    @Test
+    fun testAckMessage_error() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val consumer = RabbitMQConsumer(connectionProperties, queueName, dispatcher, converter, type)
+
+        every { channel.basicAck(any(), any()) } throws IOException()
+
+        val message = PendingRabbitMQMessage("message", 1L)
+        runBlockingTest {
+            val response = consumer.ackMessage(message)
+            assertThat(response).isInstanceOf(Response.Failure::class.java)
+            assertThat((response as Response.Failure).error).isInstanceOf(IOException::class.java)
         }
 
         verify {
@@ -135,9 +156,31 @@ internal class RabbitMQConsumerTest {
         val channel = mockNewSuccessfulChannel(connection)
         val consumer = RabbitMQConsumer(connectionProperties, queueName, dispatcher, converter, type)
 
-        val message = PendingRabbitMQMessage("message", 1L, 1)
+        val message = PendingRabbitMQMessage("message", 1L)
         runBlockingTest {
-            consumer.nackMessage(message)
+            val response = consumer.nackMessage(message)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
+            assertThat((response as Response.Success).value).isEqualTo(message)
+        }
+
+        verify {
+            channel.basicNack(1, false, true)
+        }
+    }
+
+    @Test
+    fun testNackMessage_error() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val consumer = RabbitMQConsumer(connectionProperties, queueName, dispatcher, converter, type)
+
+        every { channel.basicNack(any(), any(), any()) } throws IOException()
+
+        val message = PendingRabbitMQMessage("message", 1L)
+        runBlockingTest {
+            val response = consumer.nackMessage(message)
+            assertThat(response).isInstanceOf(Response.Failure::class.java)
+            assertThat((response as Response.Failure).error).isInstanceOf(IOException::class.java)
         }
 
         verify {

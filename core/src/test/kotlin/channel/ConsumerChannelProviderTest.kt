@@ -12,7 +12,6 @@ import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import model.ConnectionProperties
-import model.ConsumerChannelProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -29,6 +28,7 @@ internal class ConsumerChannelProviderTest {
     private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
     private val queueName: String = "testQueue"
     private val testPrefetchCount: Int = 1000
+    private val testWatchDogInterval: Long = 10000
 
     @BeforeEach
     fun initialize() {
@@ -46,7 +46,7 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
         verify {
             anyConstructed<ConnectionFactory>().username = connectionProperties.username
@@ -69,7 +69,7 @@ internal class ConsumerChannelProviderTest {
         assertThrows<ConnectException> {
             ConsumerChannelProvider(
                 connectionProperties, queueName, testDispatcher,
-                testDelivery, ConsumerChannelProperties(testPrefetchCount)
+                testDelivery, testPrefetchCount, testWatchDogInterval
             )
         }
     }
@@ -80,7 +80,7 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         val deliveryTag = 1L
@@ -98,15 +98,13 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         every { channel.basicAck(any(), false) } throws IOException()
 
         val deliveryTag = 1L
-        assertThrows<IOException> {
-            channelProvider.tryAck(deliveryTag)
-        }
+        channelProvider.tryAck(deliveryTag)
 
         verify {
             channel.basicAck(deliveryTag, false)
@@ -120,7 +118,7 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         val deliveryTag = 1L
@@ -137,14 +135,90 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
+        )
+
+        every { channel.basicNack(any(), false, true) } throws IOException()
+
+        val deliveryTag = 1L
+        channelProvider.tryNack(deliveryTag)
+
+        verify {
+            channel.basicNack(deliveryTag, false, true)
+        }
+        channelProvider.close()
+    }
+
+    @Test
+    fun testAck() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, queueName, testDispatcher,
+            testDelivery, testPrefetchCount, testWatchDogInterval
+        )
+
+        val deliveryTag = 1L
+        channelProvider.ack(deliveryTag)
+
+        verify {
+            channel.basicAck(deliveryTag, false)
+        }
+    }
+
+    @Test
+    fun testAck_error() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, queueName, testDispatcher,
+            testDelivery, testPrefetchCount, testWatchDogInterval
+        )
+
+        every { channel.basicAck(any(), false) } throws IOException()
+
+        val deliveryTag = 1L
+        assertThrows<IOException> {
+            channelProvider.ack(deliveryTag)
+        }
+
+        verify {
+            channel.basicAck(deliveryTag, false)
+        }
+        channelProvider.close()
+    }
+
+    @Test
+    fun testNack() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, queueName, testDispatcher,
+            testDelivery, testPrefetchCount, testWatchDogInterval
+        )
+
+        val deliveryTag = 1L
+        channelProvider.nack(deliveryTag)
+
+        verify {
+            channel.basicNack(deliveryTag, false, true)
+        }
+    }
+
+    @Test
+    fun testNack_error() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, queueName, testDispatcher,
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         every { channel.basicNack(any(), false, true) } throws IOException()
 
         val deliveryTag = 1L
         assertThrows<IOException> {
-            channelProvider.tryNack(deliveryTag)
+            channelProvider.nack(deliveryTag)
         }
 
         verify {
@@ -154,12 +228,51 @@ internal class ConsumerChannelProviderTest {
     }
 
     @Test
+    fun testRecreateChannel() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, queueName, testDispatcher,
+            testDelivery, testPrefetchCount, testWatchDogInterval
+        )
+
+        every { channel.isOpen } returns false
+        every { connection.isOpen } returns false
+
+        channelProvider.recreateChannel()
+
+        verify(exactly = 2) {
+            anyConstructed<ConnectionFactory>().newConnection()
+        }
+    }
+
+    @Test
+    fun testRecreateChannel_error() {
+        val connection = mockNewSuccessfulConnection()
+        val channel = mockNewSuccessfulChannel(connection)
+        val channelProvider = ConsumerChannelProvider(
+            connectionProperties, queueName, testDispatcher,
+            testDelivery, testPrefetchCount, testWatchDogInterval
+        )
+
+        every { channel.isOpen } returns false
+        every { connection.isOpen } returns false
+        every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
+
+        assertThrows<ConnectException> { channelProvider.recreateChannel() }
+
+        verify(exactly = 2) {
+            anyConstructed<ConnectionFactory>().newConnection()
+        }
+    }
+
+    @Test
     fun testReconnect() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         every { connection.isOpen } returns false
@@ -185,7 +298,7 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         every { connection.isOpen } returns false
@@ -206,7 +319,7 @@ internal class ConsumerChannelProviderTest {
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         assertThat(channelProvider.channelIsOpen()).isTrue
@@ -222,7 +335,7 @@ internal class ConsumerChannelProviderTest {
         mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
             connectionProperties, queueName, testDispatcher,
-            testDelivery, ConsumerChannelProperties(testPrefetchCount)
+            testDelivery, testPrefetchCount, testWatchDogInterval
         )
 
         channelProvider.close()
