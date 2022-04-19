@@ -1,6 +1,5 @@
 package converter
 
-import exception.ConverterException
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -28,7 +27,7 @@ internal class DefaultConverterTest {
     @Test
     fun testToByteArray_notSupportedType() {
         val testBoolean = true
-        assertThrows<ConverterException> {
+        assertThrows<IllegalStateException> {
             DefaultConverter().toByteArray(testBoolean, Boolean::class.java)
         }
     }
@@ -36,7 +35,7 @@ internal class DefaultConverterTest {
     @Test
     fun testToObject_notSupportedType() {
         val testByteArray = true.toString().toByteArray()
-        assertThrows<ConverterException> {
+        assertThrows<IllegalStateException> {
             DefaultConverter().toObject(testByteArray, Boolean::class.java)
         }
     }

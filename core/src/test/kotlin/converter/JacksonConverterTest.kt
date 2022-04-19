@@ -1,7 +1,6 @@
 package converter
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import exception.ConverterException
 import io.mockk.every
 import io.mockk.mockk
 import org.assertj.core.api.Assertions.assertThat
@@ -63,7 +62,7 @@ internal class JacksonConverterTest {
         every { objectMapper.writeValueAsString(any()) } throws IOException()
 
         val converter = JacksonConverter(objectMapper)
-        assertThrows<ConverterException> {
+        assertThrows<IllegalStateException> {
             converter.toByteArray("testString", String::class.java)
         }
     }
@@ -75,7 +74,7 @@ internal class JacksonConverterTest {
         every { objectMapper.readValue(testByteArray, String::class.java) } throws IOException()
 
         val converter = JacksonConverter(objectMapper)
-        assertThrows<ConverterException>{
+        assertThrows<IllegalStateException>{
             converter.toObject(testByteArray, String::class.java)
         }
     }

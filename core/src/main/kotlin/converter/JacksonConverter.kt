@@ -1,7 +1,6 @@
 package converter
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import exception.ConverterException
 
 class JacksonConverter(
     private val objectMapper: ObjectMapper = ObjectMapper()
@@ -11,8 +10,8 @@ class JacksonConverter(
         return try {
             objectMapper.writeValueAsString(value).toByteArray()
         } catch (e: Throwable) {
-            throw ConverterException(
-                "Failed to convert value of type ${type.name} to byte array, cause ${e.message}"
+            throw RuntimeException(
+                "Failed to convert value of type ${type.name} to byte array", e
             )
         }
     }
@@ -21,8 +20,8 @@ class JacksonConverter(
         return try {
             objectMapper.readValue(String(value), type)
         } catch (e: Throwable) {
-            throw ConverterException(
-                "Failed to convert byte array to value of type ${type.name}, cause: ${e.message}"
+            throw RuntimeException(
+                "Failed to convert byte array to value of type ${type.name}", e
             )
         }
     }

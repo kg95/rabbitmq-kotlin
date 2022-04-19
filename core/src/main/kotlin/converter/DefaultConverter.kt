@@ -1,6 +1,5 @@
 package converter
 
-import exception.ConverterException
 
 class DefaultConverter: Converter {
     override fun <T> toByteArray(value: T, type: Class<T>): ByteArray {
@@ -10,7 +9,9 @@ class DefaultConverter: Converter {
         if(type == ByteArray::class.java) {
             return value as ByteArray
         }
-        throw ConverterException("${type.name} is not supported by this converter")
+        val message = "${type.name} is not supported by this converter. Consider using a different" +
+                "converter or implement your own."
+        throw IllegalStateException(message)
     }
 
     override fun <T> toObject(value: ByteArray, type: Class<T>): T {
@@ -20,6 +21,8 @@ class DefaultConverter: Converter {
         if(type == ByteArray::class.java) {
             return value as T
         }
-        throw ConverterException("${type.name} is not supported by this converter")
+        val message = "${type.name} is not supported by this converter. Consider using a different" +
+                "converter or implement your own."
+        throw IllegalStateException(message)
     }
 }
