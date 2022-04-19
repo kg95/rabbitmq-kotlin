@@ -24,6 +24,8 @@ internal class RabbitMQProducerIT {
     )
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
+    private val publishCount = 1
+    private val publishDelayMillis = 1000L
 
     @BeforeEach
     fun initialize() {
@@ -53,7 +55,8 @@ internal class RabbitMQProducerIT {
     @Test
     fun testSendMessages() {
         val rabbitProducer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, DefaultConverter(), String::class.java
+            rabbitMQAccess, virtualHost, queueName, DefaultConverter(), String::class.java,
+            publishCount, publishDelayMillis
         )
         val messages = listOf("message1", "message2", "message3")
         runBlocking {

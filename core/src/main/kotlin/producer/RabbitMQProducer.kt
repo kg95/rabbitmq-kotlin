@@ -9,17 +9,14 @@ import model.RabbitMQAccess
 import model.Response
 import util.convertToRabbitMQException
 
-private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
-private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
-
 class RabbitMQProducer<T: Any> (
     rabbitMQAccess: RabbitMQAccess,
     virtualHost: String,
     queueName: String,
     private val converter: Converter,
     private val type: Class<T>,
-    private val publishAttemptCount: Int = DEFAULT_PUBLISH_ATTEMPT_COUNT,
-    private val publishAttemptDelayMillis: Long = DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS,
+    private val publishAttemptCount: Int,
+    private val publishAttemptDelayMillis: Long,
 ) {
     private var channelProvider: ProducerChannelProvider
 

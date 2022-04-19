@@ -32,6 +32,8 @@ class RabbitMQProducerTest {
     private val queueName: String = "testQueue"
     private val converter: DefaultConverter = mockk(relaxed = true)
     private val type = String::class.java
+    private val publishCount = 1
+    private val publishDelayMillis = 1000L
 
     @BeforeEach
     fun initialize() {
@@ -47,7 +49,10 @@ class RabbitMQProducerTest {
     fun testInitialize() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         verify {
             anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
@@ -66,7 +71,10 @@ class RabbitMQProducerTest {
     fun testCreation_connectionError() {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
         val exception = assertThrows<RabbitMQException> {
-            RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+            RabbitMQProducer(
+                rabbitMQAccess, virtualHost, queueName, converter,
+                type, publishCount, publishDelayMillis
+            )
         }
         val message = "Failed to connect to rabbitmq message broker. Ensure that the broker " +
                 "is running and your ConnectionProperties are set correctly"
@@ -78,7 +86,10 @@ class RabbitMQProducerTest {
     fun testClose() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        val producer = RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         producer.close()
 
@@ -91,7 +102,10 @@ class RabbitMQProducerTest {
     fun testSendMessages() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        val producer = RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         val messages = listOf( "message1", "message2", "message3")
         for (message in messages) {
@@ -119,7 +133,10 @@ class RabbitMQProducerTest {
     fun testSendMessages_conversionError() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        val producer = RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         val messages = listOf( "message")
         every { converter.toByteArray(messages.first(), type) } throws IllegalStateException()
@@ -137,7 +154,10 @@ class RabbitMQProducerTest {
     fun testSendMessages_rabbitMQError() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        val producer = RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         val messages = listOf( "message1", "message2", "message3")
         for (message in messages) {
@@ -160,7 +180,10 @@ class RabbitMQProducerTest {
     fun testSendMessages_reconnect() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        val producer = RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         val messages = listOf( "message1")
         every { converter.toByteArray(messages.first(), type) } returns messages.first().toByteArray()
@@ -189,7 +212,10 @@ class RabbitMQProducerTest {
     fun testSendMessage() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(rabbitMQAccess, virtualHost, queueName, converter, type)
+        val producer = RabbitMQProducer(
+            rabbitMQAccess, virtualHost, queueName, converter,
+            type, publishCount, publishDelayMillis
+        )
 
         val message = "message"
         every { converter.toByteArray(message, type) } returns message.toByteArray()
