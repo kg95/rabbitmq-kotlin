@@ -8,7 +8,10 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import model.PendingRabbitMQMessage
 import converter.Converter
+import exception.RabbitMQException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import model.ConnectionProperties
+import model.Response
 import util.convertToRabbitMQException
 
 private const val MAX_PREFETCH_COUNT = 65000
@@ -66,30 +69,53 @@ open class RabbitMQConsumer<T>(
         }
     }
 
-    fun ackMessage(pending: PendingRabbitMQMessage<T>) =
-        channelProvider.tryAck(pending.deliveryTag)
+    fun ackMessage(pending: PendingRabbitMQMessage<T>): Response<PendingRabbitMQMessage<T>> {
+        return try {
+            channelProvider.recreateChannel()
+            channelProvider.ack(pending.deliveryTag)
+            Response.Success(pending)
+        } catch (e: Throwable) {
+            Response.Failure(e)
+        }
+    }
 
-    fun nackMessage(pending: PendingRabbitMQMessage<T>) =
-        channelProvider.tryNack(pending.deliveryTag)
 
-    suspend fun collectNextMessages(timeoutMillis: Long = 1000, limit: Int = 100): List<PendingRabbitMQMessage<T>> {
+    fun nackMessage(pending: PendingRabbitMQMessage<T>): Response<PendingRabbitMQMessage<T>> {
+        return try {
+            channelProvider.recreateChannel()
+            channelProvider.nack(pending.deliveryTag)
+            Response.Success(pending)
+        } catch (e: Throwable) {
+            Response.Failure(e)
+        }
+    }
+
+    suspend fun collectNextMessages(
+        timeoutMillis: Long = 1000,
+        limit: Int = 100
+    ): Response<List<PendingRabbitMQMessage<T>>> {
         val list = mutableListOf<PendingRabbitMQMessage<T>>()
-        withTimeoutOrNull(timeoutMillis) {
-            while (list.size < limit) {
-                val message = messageBuffer.receive()
-                try {
-                    val converted = converter.toObject(message.body, type)
-                    list.add(PendingRabbitMQMessage(converted, message.envelope.deliveryTag))
-                } catch (e: Throwable) {
-                    channelProvider.tryAck(message.envelope.deliveryTag)
-                    list.forEach {
-                        channelProvider.tryNack(it.deliveryTag)
+        return try {
+            if(!channelProvider.channelIsOpen() && messageBuffer.isEmpty) {
+                throw RabbitMQException("Consumer lost connection to rabbitmq broker", null)
+            }
+            withTimeoutOrNull(timeoutMillis) {
+                while (list.size < limit) {
+                    val message = messageBuffer.receive()
+                    try {
+                        val converted = converter.toObject(message.body, type)
+                        list.add(PendingRabbitMQMessage(converted, message.envelope.deliveryTag))
+                    } catch (e: Throwable) {
+                        channelProvider.tryAck(message.envelope.deliveryTag)
+                        throw e
                     }
-                    throw e
                 }
             }
+            Response.Success(list)
+        } catch (e: Throwable) {
+            list.forEach { channelProvider.tryNack(it.deliveryTag) }
+            Response.Failure(e)
         }
-        return list
     }
 
     fun close() {

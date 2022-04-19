@@ -4,6 +4,7 @@ import kotlinx.coroutines.delay
 import converter.Converter
 import kotlinx.coroutines.runBlocking
 import model.ConnectionProperties
+import model.Response
 import util.convertToRabbitMQException
 
 private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
@@ -30,16 +31,27 @@ class RabbitMQProducer<T: Any> (
         }
     }
 
-    suspend fun sendMessage(message: T) {
-        sendMessagesInBytes(
-            listOf(converter.toByteArray(message, type))
-        )
+    suspend fun sendMessage(message: T):Response<T> {
+        return try {
+            sendMessagesInBytes(
+                listOf(converter.toByteArray(message, type))
+            )
+            Response.Success(message)
+        } catch (e: Throwable) {
+            Response.Failure(e)
+        }
+
     }
 
-    suspend fun sendMessages(messages: Iterable<T>) {
-        sendMessagesInBytes(
-            messages.map { converter.toByteArray(it, type) }
-        )
+    suspend fun sendMessages(messages: Iterable<T>): Response<List<T>> {
+        return try {
+            sendMessagesInBytes(
+                messages.map { converter.toByteArray(it, type) }
+            )
+            Response.Success(messages.toList())
+        } catch (e: Throwable) {
+            Response.Failure(e)
+        }
     }
 
     private suspend fun sendMessagesInBytes(messages: Iterable<ByteArray>) {

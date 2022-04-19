@@ -76,25 +76,28 @@ internal class ConsumerChannelProvider(
         channel = createChannel()
     }
 
-    fun tryAck(deliveryTag: Long): Boolean {
-        return try {
-            super.recreateChannel()
+    fun tryAck(deliveryTag: Long) {
+        try {
             channel.basicAck(deliveryTag, false)
-            true
         } catch (_: Throwable) {
-            false
+            return
         }
     }
 
-
-    fun tryNack(deliveryTag: Long): Boolean {
-        return try {
-            super.recreateChannel()
+    fun tryNack(deliveryTag: Long) {
+        try {
             channel.basicNack(deliveryTag, false, true)
-            true
         } catch (_: Throwable) {
-            false
+            return
         }
+    }
+
+    fun ack(deliveryTag: Long) {
+        channel.basicAck(deliveryTag, false)
+    }
+
+    fun nack(deliveryTag: Long) {
+        channel.basicNack(deliveryTag, false, true)
     }
 
     override fun close() {
