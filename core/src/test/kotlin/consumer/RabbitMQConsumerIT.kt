@@ -26,6 +26,8 @@ internal class RabbitMQConsumerIT {
     )
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
+    private val prefetchCount = 1000
+    private val watchDogIntervalMillis = 10000L
 
     @BeforeEach
     fun initialize() {
@@ -50,7 +52,7 @@ internal class RabbitMQConsumerIT {
     fun testCollectNextMessages() {
         val consumer = RabbitMQConsumer(
             rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
-            DefaultConverter(), String::class.java
+            DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -74,7 +76,7 @@ internal class RabbitMQConsumerIT {
     fun testCollectNextMessages_invalidMessage() {
         val consumer = RabbitMQConsumer(
             rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
-            JacksonConverter(), Int::class.java
+            JacksonConverter(), Int::class.java, prefetchCount, watchDogIntervalMillis
         )
 
         val invalidMessage = false
@@ -98,7 +100,7 @@ internal class RabbitMQConsumerIT {
     fun testCollectNextMessages_partiallyInvalidMessages() {
         val consumer = RabbitMQConsumer(
             rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
-            JacksonConverter(), Int::class.java
+            JacksonConverter(), Int::class.java, prefetchCount, watchDogIntervalMillis
         )
 
         val validMessage = 1
@@ -135,7 +137,7 @@ internal class RabbitMQConsumerIT {
     fun testAckMessage() {
         val consumer = RabbitMQConsumer(
             rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
-            DefaultConverter(), String::class.java
+            DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -162,7 +164,7 @@ internal class RabbitMQConsumerIT {
     fun testNackMessage() {
         val consumer = RabbitMQConsumer(
             rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
-            DefaultConverter(), String::class.java
+            DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
         val messages = listOf("message1", "message2", "message3")
@@ -189,7 +191,7 @@ internal class RabbitMQConsumerIT {
     fun testClose() {
         val consumer = RabbitMQConsumer(
             rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
-            DefaultConverter(), String::class.java
+            DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
         val messages = listOf("message1", "message2", "message3")

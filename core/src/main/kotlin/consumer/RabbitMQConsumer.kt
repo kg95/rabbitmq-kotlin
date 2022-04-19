@@ -15,8 +15,6 @@ import model.Response
 import util.convertToRabbitMQException
 
 private const val MAX_PREFETCH_COUNT = 65000
-private const val DEFAULT_PREFETCH_COUNT = 1000
-private const val DEFAULT_WATCH_DOG_INTERVAL_MILLIS = 5000L
 
 class RabbitMQConsumer<T: Any>(
     rabbitMQAccess: RabbitMQAccess,
@@ -25,8 +23,8 @@ class RabbitMQConsumer<T: Any>(
     defaultDispatcher: CoroutineDispatcher,
     private val converter: Converter,
     private val type: Class<T>,
-    prefetchCount: Int = DEFAULT_PREFETCH_COUNT,
-    watchDogIntervalMillis: Long = DEFAULT_WATCH_DOG_INTERVAL_MILLIS
+    prefetchCount: Int,
+    watchDogIntervalMillis: Long
 ) {
     private val messageBuffer = Channel<Delivery>(
         capacity = prefetchCount,
