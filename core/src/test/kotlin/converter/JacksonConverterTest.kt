@@ -62,7 +62,7 @@ internal class JacksonConverterTest {
         every { objectMapper.writeValueAsString(any()) } throws IOException()
 
         val converter = JacksonConverter(objectMapper)
-        assertThrows<IllegalStateException> {
+        assertThrows<RuntimeException> {
             converter.toByteArray("testString", String::class.java)
         }
     }
@@ -74,7 +74,7 @@ internal class JacksonConverterTest {
         every { objectMapper.readValue(testByteArray, String::class.java) } throws IOException()
 
         val converter = JacksonConverter(objectMapper)
-        assertThrows<IllegalStateException>{
+        assertThrows<RuntimeException>{
             converter.toObject(testByteArray, String::class.java)
         }
     }
