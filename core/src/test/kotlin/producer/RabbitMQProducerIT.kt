@@ -6,7 +6,7 @@ import com.rabbitmq.client.ConsumerShutdownSignalCallback
 import com.rabbitmq.client.DeliverCallback
 import converter.DefaultConverter
 import kotlinx.coroutines.runBlocking
-import model.ConnectionProperties
+import model.RabbitMQAccess
 import model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -19,7 +19,7 @@ internal class RabbitMQProducerIT {
 
     private lateinit var channel: Channel
     private val messageBuffer: MutableList<ByteArray> = mutableListOf()
-    private val connectionProperties = ConnectionProperties(
+    private val rabbitMQAccess = RabbitMQAccess(
         "rabbitmq", "rabbitmq", "localhost", 5672
     )
     private val virtualHost: String = "/"
@@ -53,7 +53,7 @@ internal class RabbitMQProducerIT {
     @Test
     fun testSendMessages() {
         val rabbitProducer = RabbitMQProducer(
-            connectionProperties, virtualHost, queueName, DefaultConverter(), String::class.java
+            rabbitMQAccess, virtualHost, queueName, DefaultConverter(), String::class.java
         )
         val messages = listOf("message1", "message2", "message3")
         runBlocking {

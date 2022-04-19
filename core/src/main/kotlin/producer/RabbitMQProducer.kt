@@ -5,7 +5,7 @@ import com.rabbitmq.client.ReturnListener
 import kotlinx.coroutines.delay
 import converter.Converter
 import kotlinx.coroutines.runBlocking
-import model.ConnectionProperties
+import model.RabbitMQAccess
 import model.Response
 import util.convertToRabbitMQException
 
@@ -13,7 +13,7 @@ private const val DEFAULT_PUBLISH_ATTEMPT_COUNT = 1
 private const val DEFAULT_PUBLISH_ATTEMPT_DELAY_MILLIS = 1000L
 
 class RabbitMQProducer<T: Any> (
-    connectionProperties: ConnectionProperties,
+    rabbitMQAccess: RabbitMQAccess,
     virtualHost: String,
     queueName: String,
     private val converter: Converter,
@@ -29,7 +29,7 @@ class RabbitMQProducer<T: Any> (
         }
         try {
             channelProvider = ProducerChannelProvider(
-                connectionProperties, virtualHost, queueName, onReturn
+                rabbitMQAccess, virtualHost, queueName, onReturn
             )
         } catch (e: Throwable) {
             throw convertToRabbitMQException(e)

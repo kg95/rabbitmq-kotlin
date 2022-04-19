@@ -2,13 +2,13 @@ package channel
 
 import com.rabbitmq.client.Channel
 import connection.ConnectionProvider
-import model.ConnectionProperties
+import model.RabbitMQAccess
 
 internal abstract class AbstractChannelProvider(
-    connectionProperties: ConnectionProperties,
+    rabbitMQAccess: RabbitMQAccess,
     virtualHost: String
 ) {
-    private val connectionProvider = ConnectionProvider(connectionProperties, virtualHost)
+    private val connectionProvider = ConnectionProvider(rabbitMQAccess, virtualHost)
     protected lateinit var channel: Channel
 
     protected open fun createChannel(): Channel {

@@ -1,6 +1,6 @@
 package model
 
-data class ConnectionProperties(
+data class RabbitMQAccess(
     val username: String,
     val password: String,
     val host: String,

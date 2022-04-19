@@ -3,10 +3,10 @@ package connection
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
-import model.ConnectionProperties
+import model.RabbitMQAccess
 
 internal class ConnectionProvider(
-    private val connectionProperties: ConnectionProperties,
+    private val rabbitMQAccess: RabbitMQAccess,
     private val virtualHost: String
 ) {
     private val connectionFactory: ConnectionFactory = ConnectionFactory()
@@ -14,10 +14,10 @@ internal class ConnectionProvider(
 
     init {
         connectionFactory.apply {
-            username = connectionProperties.username
-            password = connectionProperties.password
-            host = connectionProperties.host
-            port = connectionProperties.port
+            username = rabbitMQAccess.username
+            password = rabbitMQAccess.password
+            host = rabbitMQAccess.host
+            port = rabbitMQAccess.port
             virtualHost = virtualHost
             isAutomaticRecoveryEnabled = false
         }

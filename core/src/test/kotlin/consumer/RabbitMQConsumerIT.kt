@@ -8,7 +8,7 @@ import converter.JacksonConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import model.ConnectionProperties
+import model.RabbitMQAccess
 import model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit
 internal class RabbitMQConsumerIT {
 
     private lateinit var channel: Channel
-    private val connectionProperties = ConnectionProperties(
+    private val rabbitMQAccess = RabbitMQAccess(
         "rabbitmq", "rabbitmq", "localhost", 5672,
     )
     private val virtualHost: String = "/"
@@ -49,7 +49,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java
         )
 
@@ -73,7 +73,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages_invalidMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
             JacksonConverter(), Int::class.java
         )
 
@@ -97,7 +97,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testCollectNextMessages_partiallyInvalidMessages() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
             JacksonConverter(), Int::class.java
         )
 
@@ -134,7 +134,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testAckMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java
         )
 
@@ -161,7 +161,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testNackMessage() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java
         )
 
@@ -188,7 +188,7 @@ internal class RabbitMQConsumerIT {
     @Test
     fun testClose() {
         val consumer = RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, Dispatchers.Default,
+            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java
         )
 

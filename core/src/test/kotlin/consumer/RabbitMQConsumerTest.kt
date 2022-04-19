@@ -17,7 +17,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
-import model.ConnectionProperties
+import model.RabbitMQAccess
 import model.PendingRabbitMQMessage
 import model.Response
 import org.assertj.core.api.Assertions.assertThat
@@ -32,7 +32,7 @@ import java.net.ConnectException
 @ObsoleteCoroutinesApi
 internal class RabbitMQConsumerTest {
 
-    private val connectionProperties: ConnectionProperties = mockk(relaxed = true)
+    private val rabbitMQAccess: RabbitMQAccess = mockk(relaxed = true)
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
     private val dispatcher = TestCoroutineDispatcher()
@@ -55,15 +55,15 @@ internal class RabbitMQConsumerTest {
         val channel = mockNewSuccessfulChannel(connection)
         val prefetchCount = 1000
         RabbitMQConsumer(
-            connectionProperties, virtualHost, queueName, dispatcher,
+            rabbitMQAccess, virtualHost, queueName, dispatcher,
             converter, type, prefetchCount
         )
 
         verify {
-            anyConstructed<ConnectionFactory>().username = connectionProperties.username
-            anyConstructed<ConnectionFactory>().password = connectionProperties.password
-            anyConstructed<ConnectionFactory>().host = connectionProperties.host
-            anyConstructed<ConnectionFactory>().port = connectionProperties.port
+            anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
+            anyConstructed<ConnectionFactory>().password = rabbitMQAccess.password
+            anyConstructed<ConnectionFactory>().host = rabbitMQAccess.host
+            anyConstructed<ConnectionFactory>().port = rabbitMQAccess.port
             anyConstructed<ConnectionFactory>().virtualHost = virtualHost
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
             anyConstructed<ConnectionFactory>().newConnection()
@@ -77,7 +77,7 @@ internal class RabbitMQConsumerTest {
     fun testCreation_connectionError() {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
         val exception = assertThrows<RabbitMQException> {
-            RabbitMQConsumer(connectionProperties, virtualHost, queueName, dispatcher, converter, type)
+            RabbitMQConsumer(rabbitMQAccess, virtualHost, queueName, dispatcher, converter, type)
         }
         val message = "Failed to connect to rabbitmq message broker. Ensure that the broker " +
                 "is running and your ConnectionProperties are set correctly"
@@ -94,7 +94,7 @@ internal class RabbitMQConsumerTest {
         } throws IOException(null, ShutdownSignalException(false, false, null, null))
         val exception = assertThrows<RabbitMQException> {
             RabbitMQConsumer(
-                connectionProperties, virtualHost, queueName, Dispatchers.Default,
+                rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
                 DefaultConverter(), String::class.java
             )
         }
@@ -106,7 +106,7 @@ internal class RabbitMQConsumerTest {
     fun testClose() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val consumer = RabbitMQConsumer(connectionProperties, queueName, virtualHost, dispatcher, converter, type)
+        val consumer = RabbitMQConsumer(rabbitMQAccess, queueName, virtualHost, dispatcher, converter, type)
 
         consumer.close()
 
@@ -119,7 +119,7 @@ internal class RabbitMQConsumerTest {
     fun testAckMessage() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val consumer = RabbitMQConsumer(connectionProperties, virtualHost, queueName, dispatcher, converter, type)
+        val consumer = RabbitMQConsumer(rabbitMQAccess, virtualHost, queueName, dispatcher, converter, type)
 
         val message = PendingRabbitMQMessage("message", 1L)
         runBlockingTest {
@@ -137,7 +137,7 @@ internal class RabbitMQConsumerTest {
     fun testAckMessage_error() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val consumer = RabbitMQConsumer(connectionProperties, virtualHost, queueName, dispatcher, converter, type)
+        val consumer = RabbitMQConsumer(rabbitMQAccess, virtualHost, queueName, dispatcher, converter, type)
 
         every { channel.basicAck(any(), any()) } throws IOException()
 
@@ -157,7 +157,7 @@ internal class RabbitMQConsumerTest {
     fun testNackMessage() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val consumer = RabbitMQConsumer(connectionProperties, virtualHost, queueName, dispatcher, converter, type)
+        val consumer = RabbitMQConsumer(rabbitMQAccess, virtualHost, queueName, dispatcher, converter, type)
 
         val message = PendingRabbitMQMessage("message", 1L)
         runBlockingTest {
@@ -175,7 +175,7 @@ internal class RabbitMQConsumerTest {
     fun testNackMessage_error() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val consumer = RabbitMQConsumer(connectionProperties, virtualHost, queueName, dispatcher, converter, type)
+        val consumer = RabbitMQConsumer(rabbitMQAccess, virtualHost, queueName, dispatcher, converter, type)
 
         every { channel.basicNack(any(), any(), any()) } throws IOException()
 

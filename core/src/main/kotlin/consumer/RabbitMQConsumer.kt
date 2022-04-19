@@ -10,7 +10,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import model.PendingRabbitMQMessage
 import converter.Converter
 import exception.RabbitMQException
-import model.ConnectionProperties
+import model.RabbitMQAccess
 import model.Response
 import util.convertToRabbitMQException
 
@@ -19,7 +19,7 @@ private const val DEFAULT_PREFETCH_COUNT = 1000
 private const val DEFAULT_WATCH_DOG_INTERVAL_MILLIS = 5000L
 
 class RabbitMQConsumer<T: Any>(
-    connectionProperties: ConnectionProperties,
+    rabbitMQAccess: RabbitMQAccess,
     virtualHost: String,
     queueName: String,
     defaultDispatcher: CoroutineDispatcher,
@@ -46,7 +46,7 @@ class RabbitMQConsumer<T: Any>(
         }
         try {
             channelProvider = ConsumerChannelProvider(
-                connectionProperties, virtualHost, queueName, defaultDispatcher,
+                rabbitMQAccess, virtualHost, queueName, defaultDispatcher,
                 deliveryCallback, prefetchCount, watchDogIntervalMillis
             )
         } catch (e: Throwable) {
