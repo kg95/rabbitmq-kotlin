@@ -18,7 +18,7 @@ internal class ConnectionProvider(
             password = rabbitMQAccess.password
             host = rabbitMQAccess.host
             port = rabbitMQAccess.port
-            virtualHost = virtualHost
+            virtualHost = this@ConnectionProvider.virtualHost
             isAutomaticRecoveryEnabled = false
         }
         connection = createConnection()
