@@ -1,15 +1,15 @@
+package consumer
+
 import channel.ConsumerChannelProvider
 import com.rabbitmq.client.DeliverCallback
 import com.rabbitmq.client.Delivery
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import model.PendingRabbitMQMessage
 import converter.Converter
 import exception.RabbitMQException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import model.ConnectionProperties
 import model.Response
 import util.convertToRabbitMQException
@@ -18,8 +18,7 @@ private const val MAX_PREFETCH_COUNT = 65000
 private const val DEFAULT_PREFETCH_COUNT = 1000
 private const val DEFAULT_WATCH_DOG_INTERVAL_MILLIS = 5000L
 
-@ObsoleteCoroutinesApi
-open class RabbitMQConsumer<T>(
+class RabbitMQConsumer<T: Any>(
     connectionProperties: ConnectionProperties,
     queueName: String,
     defaultDispatcher: CoroutineDispatcher,
