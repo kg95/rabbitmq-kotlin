@@ -130,7 +130,7 @@ internal class RabbitMQConsumerTest {
             type, prefetchCount, watchDogIntervalMillis
         )
 
-        val message = PendingRabbitMQMessage("message", 1L)
+        val message = PendingRabbitMQMessage("message", 1L, 1L)
         runBlockingTest {
             val response = consumer.ackMessage(message)
             assertThat(response).isInstanceOf(Response.Success::class.java)
@@ -153,7 +153,7 @@ internal class RabbitMQConsumerTest {
 
         every { channel.basicAck(any(), any()) } throws IOException()
 
-        val message = PendingRabbitMQMessage("message", 1L)
+        val message = PendingRabbitMQMessage("message", 1L, 1L)
         runBlockingTest {
             val response = consumer.ackMessage(message)
             assertThat(response).isInstanceOf(Response.Failure::class.java)
@@ -174,7 +174,7 @@ internal class RabbitMQConsumerTest {
             type, prefetchCount, watchDogIntervalMillis
         )
 
-        val message = PendingRabbitMQMessage("message", 1L)
+        val message = PendingRabbitMQMessage("message", 1L, 1L)
         runBlockingTest {
             val response = consumer.nackMessage(message)
             assertThat(response).isInstanceOf(Response.Success::class.java)
@@ -196,7 +196,7 @@ internal class RabbitMQConsumerTest {
         )
         every { channel.basicNack(any(), any(), any()) } throws IOException()
 
-        val message = PendingRabbitMQMessage("message", 1L)
+        val message = PendingRabbitMQMessage("message", 1L, 1L)
         runBlockingTest {
             val response = consumer.nackMessage(message)
             assertThat(response).isInstanceOf(Response.Failure::class.java)

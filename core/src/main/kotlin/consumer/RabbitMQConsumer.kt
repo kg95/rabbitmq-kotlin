@@ -3,6 +3,7 @@ package consumer
 import channel.ConsumerChannelProvider
 import com.rabbitmq.client.DeliverCallback
 import com.rabbitmq.client.Delivery
+import com.rabbitmq.client.ShutdownListener
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
@@ -33,6 +34,8 @@ class RabbitMQConsumer<T: Any>(
         }
     )
 
+    private var channelVersion: Long = 1
+
     private val channelProvider: ConsumerChannelProvider
 
     init {
@@ -42,10 +45,13 @@ class RabbitMQConsumer<T: Any>(
                 messageBuffer.send(message)
             }
         }
+        val shutdownListener = ShutdownListener {
+            channelVersion++
+        }
         try {
             channelProvider = ConsumerChannelProvider(
                 rabbitMQAccess, virtualHost, queueName, defaultDispatcher,
-                deliveryCallback, prefetchCount, watchDogIntervalMillis
+                deliveryCallback, shutdownListener, prefetchCount, watchDogIntervalMillis
             )
         } catch (e: Throwable) {
             throw convertToRabbitMQException(e)
@@ -68,8 +74,10 @@ class RabbitMQConsumer<T: Any>(
     }
 
     fun ackMessage(pending: PendingRabbitMQMessage<T>): Response<PendingRabbitMQMessage<T>> {
+        if(pending.channelVersion != channelVersion) {
+            return Response.Success(pending)
+        }
         return try {
-            channelProvider.recreateChannel()
             channelProvider.ack(pending.deliveryTag)
             Response.Success(pending)
         } catch (e: Throwable) {
@@ -79,6 +87,9 @@ class RabbitMQConsumer<T: Any>(
 
 
     fun nackMessage(pending: PendingRabbitMQMessage<T>): Response<PendingRabbitMQMessage<T>> {
+        if(pending.channelVersion != channelVersion) {
+            return Response.Success(pending)
+        }
         return try {
             channelProvider.recreateChannel()
             channelProvider.nack(pending.deliveryTag)
@@ -102,7 +113,7 @@ class RabbitMQConsumer<T: Any>(
                     val message = messageBuffer.receive()
                     try {
                         val converted = converter.toObject(message.body, type)
-                        list.add(PendingRabbitMQMessage(converted, message.envelope.deliveryTag))
+                        list.add(PendingRabbitMQMessage(converted, message.envelope.deliveryTag, channelVersion))
                     } catch (e: Throwable) {
                         channelProvider.tryAck(message.envelope.deliveryTag)
                         throw e
