@@ -21,6 +21,7 @@ internal class ConsumerChannelProvider(
     private val queueName: String,
     dispatcher: CoroutineDispatcher,
     private val deliverCallback: DeliverCallback,
+    private val shutdownListener: ShutdownListener,
     private val prefetchCount: Int,
     private val watchDogIntervalMillis: Long
 ): AbstractChannelProvider(rabbitMQAccess, virtualHost) {
@@ -35,16 +36,13 @@ internal class ConsumerChannelProvider(
 
     override fun createChannel(): Channel {
         return super.createChannel().apply {
-            val shutDownListener = ShutdownListener {
-                super.closeChannel(this@apply)
-            }
             val cancelCallback = CancelCallback {
                 super.closeChannel(this@apply)
             }
             val shutdownCallback = ConsumerShutdownSignalCallback { _, _ ->
                 super.closeChannel(this@apply)
             }
-            addShutdownListener(shutDownListener)
+            addShutdownListener(shutdownListener)
             basicQos(prefetchCount)
             basicConsume(queueName, deliverCallback, cancelCallback, shutdownCallback)
         }
