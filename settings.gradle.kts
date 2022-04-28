@@ -1,2 +1,2 @@
 rootProject.name = "rabbitmq-kotlin"
-include("core")
+include("rabbitmq-kotlin-lib")
