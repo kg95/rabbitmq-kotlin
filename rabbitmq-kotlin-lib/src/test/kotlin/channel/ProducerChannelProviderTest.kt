@@ -1,4 +1,4 @@
-package channel
+package io.github.kg95.rabbitmq.lib.channel
 
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
@@ -10,7 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.verify
-import model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test

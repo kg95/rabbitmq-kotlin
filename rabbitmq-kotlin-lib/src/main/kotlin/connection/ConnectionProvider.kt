@@ -1,9 +1,9 @@
-package connection
+package io.github.kg95.rabbitmq.lib.connection
 
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
-import model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
 
 internal class ConnectionProvider(
     private val rabbitMQAccess: RabbitMQAccess,

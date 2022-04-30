@@ -1,10 +1,10 @@
-package channel
+package io.github.kg95.rabbitmq.lib.channel
 
 import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.MessageProperties
 import com.rabbitmq.client.ShutdownListener
-import model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
 
 internal class ProducerChannelProvider(
     rabbitMQAccess: RabbitMQAccess,

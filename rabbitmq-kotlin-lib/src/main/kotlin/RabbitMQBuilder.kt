@@ -1,12 +1,10 @@
-package builder
+package io.github.kg95.rabbitmq.lib
 
-import consumer.RabbitMQConsumer
-import converter.Converter
-import converter.DefaultConverter
-import model.ConsumerOptions
-import model.ProducerOptions
-import model.RabbitMQAccess
-import producer.RabbitMQProducer
+import io.github.kg95.rabbitmq.lib.converter.Converter
+import io.github.kg95.rabbitmq.lib.converter.DefaultConverter
+import io.github.kg95.rabbitmq.lib.model.ConsumerOptions
+import io.github.kg95.rabbitmq.lib.model.ProducerOptions
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
 
 class RabbitMQBuilder(
     var rabbitMQAccess: RabbitMQAccess = RabbitMQAccess(),

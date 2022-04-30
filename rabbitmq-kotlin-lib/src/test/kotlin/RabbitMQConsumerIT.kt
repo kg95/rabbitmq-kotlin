@@ -1,15 +1,15 @@
-package consumer
+package io.github.kg95.rabbitmq.lib
 
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.MessageProperties
-import converter.DefaultConverter
-import converter.JacksonConverter
+import io.github.kg95.rabbitmq.lib.converter.DefaultConverter
+import io.github.kg95.rabbitmq.lib.converter.JacksonConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import model.RabbitMQAccess
-import model.Response
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
 import org.junit.jupiter.api.AfterEach

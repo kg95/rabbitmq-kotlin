@@ -1,7 +1,7 @@
-package util
+package io.github.kg95.rabbitmq.lib.util
 
 import com.rabbitmq.client.ShutdownSignalException
-import exception.RabbitMQException
+import io.github.kg95.rabbitmq.lib.exception.RabbitMQException
 import java.io.IOException
 import java.net.ConnectException
 import java.util.concurrent.TimeoutException

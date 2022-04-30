@@ -1,5 +1,4 @@
-package converter
-
+package io.github.kg95.rabbitmq.lib.converter
 
 class DefaultConverter: Converter {
     override fun <T> toByteArray(value: T, type: Class<T>): ByteArray {

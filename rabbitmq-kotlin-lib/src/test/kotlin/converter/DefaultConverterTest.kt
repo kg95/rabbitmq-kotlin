@@ -1,4 +1,4 @@
-package converter
+package io.github.kg95.rabbitmq.lib.converter
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

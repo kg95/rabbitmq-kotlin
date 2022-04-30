@@ -1,12 +1,12 @@
-package consumer
+package io.github.kg95.rabbitmq.lib
 
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.Connection
 import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.DeliverCallback
 import com.rabbitmq.client.ShutdownSignalException
-import converter.DefaultConverter
-import exception.RabbitMQException
+import io.github.kg95.rabbitmq.lib.converter.DefaultConverter
+import io.github.kg95.rabbitmq.lib.exception.RabbitMQException
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -16,9 +16,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
 import kotlinx.coroutines.test.runBlockingTest
-import model.RabbitMQAccess
-import model.PendingRabbitMQMessage
-import model.Response
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.PendingRabbitMQMessage
+import io.github.kg95.rabbitmq.lib.model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach

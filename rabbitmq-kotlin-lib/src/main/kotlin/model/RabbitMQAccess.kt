@@ -1,4 +1,4 @@
-package model
+package io.github.kg95.rabbitmq.lib.model
 
 data class RabbitMQAccess(
     val username: String = "guest",

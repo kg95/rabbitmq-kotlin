@@ -1,4 +1,4 @@
-package converter
+package io.github.kg95.rabbitmq.lib.converter
 
 import com.fasterxml.jackson.databind.ObjectMapper
 

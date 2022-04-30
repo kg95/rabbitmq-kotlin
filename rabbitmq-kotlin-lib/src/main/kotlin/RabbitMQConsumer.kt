@@ -1,6 +1,6 @@
-package consumer
+package io.github.kg95.rabbitmq.lib
 
-import channel.ConsumerChannelProvider
+import io.github.kg95.rabbitmq.lib.channel.ConsumerChannelProvider
 import com.rabbitmq.client.DeliverCallback
 import com.rabbitmq.client.Delivery
 import com.rabbitmq.client.ShutdownListener
@@ -8,12 +8,12 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import model.PendingRabbitMQMessage
-import converter.Converter
-import exception.RabbitMQException
-import model.RabbitMQAccess
-import model.Response
-import util.convertToRabbitMQException
+import io.github.kg95.rabbitmq.lib.model.PendingRabbitMQMessage
+import io.github.kg95.rabbitmq.lib.converter.Converter
+import io.github.kg95.rabbitmq.lib.exception.RabbitMQException
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.Response
+import io.github.kg95.rabbitmq.lib.util.convertToRabbitMQException
 
 private const val MAX_PREFETCH_COUNT = 65000
 

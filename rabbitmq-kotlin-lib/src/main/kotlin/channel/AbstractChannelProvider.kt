@@ -1,8 +1,8 @@
-package channel
+package io.github.kg95.rabbitmq.lib.channel
 
 import com.rabbitmq.client.Channel
-import connection.ConnectionProvider
-import model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.connection.ConnectionProvider
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
 
 internal abstract class AbstractChannelProvider(
     rabbitMQAccess: RabbitMQAccess,

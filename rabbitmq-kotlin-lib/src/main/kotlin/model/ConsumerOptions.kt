@@ -1,4 +1,4 @@
-package model
+package io.github.kg95.rabbitmq.lib.model
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

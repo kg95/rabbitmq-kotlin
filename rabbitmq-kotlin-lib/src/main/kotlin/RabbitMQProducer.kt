@@ -1,13 +1,13 @@
-package producer
+package io.github.kg95.rabbitmq.lib
 
-import channel.ProducerChannelProvider
+import io.github.kg95.rabbitmq.lib.channel.ProducerChannelProvider
 import com.rabbitmq.client.ReturnListener
 import kotlinx.coroutines.delay
-import converter.Converter
+import io.github.kg95.rabbitmq.lib.converter.Converter
 import kotlinx.coroutines.runBlocking
-import model.RabbitMQAccess
-import model.Response
-import util.convertToRabbitMQException
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.Response
+import io.github.kg95.rabbitmq.lib.util.convertToRabbitMQException
 
 class RabbitMQProducer<T: Any> (
     rabbitMQAccess: RabbitMQAccess,

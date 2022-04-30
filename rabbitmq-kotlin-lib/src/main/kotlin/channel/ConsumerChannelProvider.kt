@@ -1,4 +1,4 @@
-package channel
+package io.github.kg95.rabbitmq.lib.channel
 
 import com.rabbitmq.client.CancelCallback
 import com.rabbitmq.client.Channel
@@ -13,7 +13,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
 
 internal class ConsumerChannelProvider(
     rabbitMQAccess: RabbitMQAccess,

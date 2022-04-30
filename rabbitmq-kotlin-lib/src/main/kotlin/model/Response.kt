@@ -1,4 +1,4 @@
-package model
+package io.github.kg95.rabbitmq.lib.model
 
 sealed class Response<T> {
     data class Success<R>(val value: R): Response<R>()
