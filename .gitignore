@@ -1,5 +1,6 @@
 .gradle
 .idea
 build/
-core/build
+rabbitmq-generator-plugin/build
+rabbitmq-kotlin-lib/build
 gradle.properties
