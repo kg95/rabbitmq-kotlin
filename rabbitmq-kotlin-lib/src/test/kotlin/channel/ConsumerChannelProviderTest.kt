@@ -12,7 +12,7 @@ import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestCoroutineDispatcher
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -27,7 +27,7 @@ internal class ConsumerChannelProviderTest {
     private val testDispatcher = TestCoroutineDispatcher()
     private val testDelivery: DeliverCallback = mockk(relaxed = true)
     private val testShutdown: ShutdownListener = mockk(relaxed = true)
-    private val rabbitMQAccess: RabbitMQAccess = mockk(relaxed = true)
+    private val rabbitmqAccess: RabbitMqAccess = mockk(relaxed = true)
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
     private val testPrefetchCount: Int = 1000
@@ -48,14 +48,14 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
         verify {
-            anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
-            anyConstructed<ConnectionFactory>().password = rabbitMQAccess.password
-            anyConstructed<ConnectionFactory>().host = rabbitMQAccess.host
-            anyConstructed<ConnectionFactory>().port = rabbitMQAccess.port
+            anyConstructed<ConnectionFactory>().username = rabbitmqAccess.username
+            anyConstructed<ConnectionFactory>().password = rabbitmqAccess.password
+            anyConstructed<ConnectionFactory>().host = rabbitmqAccess.host
+            anyConstructed<ConnectionFactory>().port = rabbitmqAccess.port
             anyConstructed<ConnectionFactory>().virtualHost = virtualHost
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
             anyConstructed<ConnectionFactory>().newConnection()
@@ -71,7 +71,7 @@ internal class ConsumerChannelProviderTest {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
         assertThrows<ConnectException> {
             ConsumerChannelProvider(
-                rabbitMQAccess, virtualHost, queueName, testDispatcher,
+                rabbitmqAccess, virtualHost, queueName, testDispatcher,
                 testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
             )
         }
@@ -82,7 +82,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -100,7 +100,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -120,7 +120,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -137,7 +137,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -157,7 +157,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -174,7 +174,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -196,7 +196,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -213,7 +213,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -235,7 +235,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -254,7 +254,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -274,7 +274,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -300,7 +300,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -321,7 +321,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 
@@ -337,7 +337,7 @@ internal class ConsumerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
         val channelProvider = ConsumerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, testDispatcher,
+            rabbitmqAccess, virtualHost, queueName, testDispatcher,
             testDelivery, testShutdown, testPrefetchCount, testWatchDogInterval
         )
 

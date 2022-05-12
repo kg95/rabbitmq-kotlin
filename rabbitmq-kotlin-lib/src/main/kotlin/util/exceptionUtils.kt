@@ -1,33 +1,33 @@
 package io.github.kg95.rabbitmq.lib.util
 
 import com.rabbitmq.client.ShutdownSignalException
-import io.github.kg95.rabbitmq.lib.exception.RabbitMQException
+import io.github.kg95.rabbitmq.lib.exception.RabbitMqException
 import java.io.IOException
 import java.net.ConnectException
 import java.util.concurrent.TimeoutException
 
-internal fun convertToRabbitMQException(e: Throwable): RabbitMQException {
+internal fun convertToRabbitMqException(e: Throwable): RabbitMqException {
     return when(e) {
         is ConnectException -> {
             val message = "Failed to connect to rabbitmq message broker. Ensure that the broker " +
                     "is running and your ConnectionProperties are set correctly"
-            RabbitMQException(message, e)
+            RabbitMqException(message, e)
         }
-        is TimeoutException -> RabbitMQException("TimeoutException during rabbitmq operation", e)
+        is TimeoutException -> RabbitMqException("TimeoutException during rabbitmq operation", e)
         is IOException -> {
             var message = "IOException during rabbitmq operation"
             when(e.cause) {
-                null -> RabbitMQException(message, e)
+                null -> RabbitMqException(message, e)
                 is ShutdownSignalException -> {
                     message += ", channel got shut down"
-                    RabbitMQException(message, e.cause)
+                    RabbitMqException(message, e.cause)
                 }
                 else -> {
                     message += ", unknown nested exception"
-                    RabbitMQException(message, e.cause)
+                    RabbitMqException(message, e.cause)
                 }
             }
         }
-        else -> RabbitMQException("Unknown exception during rabbitmq operation", e)
+        else -> RabbitMqException("Unknown exception during rabbitmq operation", e)
     }
 }

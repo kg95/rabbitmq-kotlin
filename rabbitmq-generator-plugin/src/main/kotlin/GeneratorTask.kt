@@ -55,10 +55,10 @@ abstract class GeneratorTask: DefaultTask() {
         val types = queueTypes(vhostConfig.flatMap { it.queueConfig })
         outputFile.appendText(
             """
-                import io.github.kg95.rabbitmq.lib.RabbitMQBuilder
+                import io.github.kg95.rabbitmq.lib.RabbitMqBuilder
                 import io.github.kg95.rabbitmq.lib.model.ConsumerOptions
                 import io.github.kg95.rabbitmq.lib.model.ProducerOptions
-                import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+                import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
                 import kotlinx.coroutines.Dispatchers
                 
             """.trimIndent()
@@ -84,7 +84,7 @@ abstract class GeneratorTask: DefaultTask() {
 
     private fun generateBuilder() {
         outputFile.appendText(
-            "private val rabbitmqAccess = RabbitMQAccess(" +
+            "private val rabbitmqAccess = RabbitMqAccess(" +
                     "\"${builderConfig.username}\", \"${builderConfig.password}\", " +
                     "\"${builderConfig.host}\", ${builderConfig.port}" +
                     ")\n"
@@ -102,7 +102,7 @@ abstract class GeneratorTask: DefaultTask() {
                     ")\n"
         )
         outputFile.appendText(
-            "private val builder = RabbitMQBuilder(" +
+            "private val builder = RabbitMqBuilder(" +
                     "rabbitmqAccess, ${converterClass()}(), consumerOptions, producerOptions" +
                     ")\n"
         )

@@ -8,17 +8,17 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
-import io.github.kg95.rabbitmq.lib.model.PendingRabbitMQMessage
+import io.github.kg95.rabbitmq.lib.model.PendingRabbitMqMessage
 import io.github.kg95.rabbitmq.lib.converter.Converter
-import io.github.kg95.rabbitmq.lib.exception.RabbitMQException
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.exception.RabbitMqException
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.Response
-import io.github.kg95.rabbitmq.lib.util.convertToRabbitMQException
+import io.github.kg95.rabbitmq.lib.util.convertToRabbitMqException
 
 private const val MAX_PREFETCH_COUNT = 65000
 
-class RabbitMQConsumer<T: Any>(
-    rabbitMQAccess: RabbitMQAccess,
+class RabbitMqConsumer<T: Any>(
+    rabbitmqAccess: RabbitMqAccess,
     virtualHost: String,
     queueName: String,
     defaultDispatcher: CoroutineDispatcher,
@@ -50,11 +50,11 @@ class RabbitMQConsumer<T: Any>(
         }
         try {
             channelProvider = ConsumerChannelProvider(
-                rabbitMQAccess, virtualHost, queueName, defaultDispatcher,
+                rabbitmqAccess, virtualHost, queueName, defaultDispatcher,
                 deliveryCallback, shutdownListener, prefetchCount, watchDogIntervalMillis
             )
         } catch (e: Throwable) {
-            throw convertToRabbitMQException(e)
+            throw convertToRabbitMqException(e)
         }
 
     }
@@ -73,7 +73,7 @@ class RabbitMQConsumer<T: Any>(
         }
     }
 
-    fun ackMessage(pending: PendingRabbitMQMessage<T>): Response<PendingRabbitMQMessage<T>> {
+    fun ackMessage(pending: PendingRabbitMqMessage<T>): Response<PendingRabbitMqMessage<T>> {
         if(pending.channelVersion != channelVersion) {
             return Response.Success(pending)
         }
@@ -86,7 +86,7 @@ class RabbitMQConsumer<T: Any>(
     }
 
 
-    fun nackMessage(pending: PendingRabbitMQMessage<T>): Response<PendingRabbitMQMessage<T>> {
+    fun nackMessage(pending: PendingRabbitMqMessage<T>): Response<PendingRabbitMqMessage<T>> {
         if(pending.channelVersion != channelVersion) {
             return Response.Success(pending)
         }
@@ -102,18 +102,18 @@ class RabbitMQConsumer<T: Any>(
     suspend fun collectNextMessages(
         timeoutMillis: Long = 1000,
         limit: Int = 100
-    ): Response<List<PendingRabbitMQMessage<T>>> {
-        val list = mutableListOf<PendingRabbitMQMessage<T>>()
+    ): Response<List<PendingRabbitMqMessage<T>>> {
+        val list = mutableListOf<PendingRabbitMqMessage<T>>()
         return try {
             if(!channelProvider.channelIsOpen() && messageBuffer.isEmpty) {
-                throw RabbitMQException("Consumer lost connection to rabbitmq broker", null)
+                throw RabbitMqException("Consumer lost connection to rabbitmq broker", null)
             }
             withTimeoutOrNull(timeoutMillis) {
                 while (list.size < limit) {
                     val message = messageBuffer.receive()
                     try {
                         val converted = converter.toObject(message.body, type)
-                        list.add(PendingRabbitMQMessage(converted, message.envelope.deliveryTag, channelVersion))
+                        list.add(PendingRabbitMqMessage(converted, message.envelope.deliveryTag, channelVersion))
                     } catch (e: Throwable) {
                         channelProvider.tryAck(message.envelope.deliveryTag)
                         throw e

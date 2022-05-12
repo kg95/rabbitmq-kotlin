@@ -6,7 +6,7 @@ import com.rabbitmq.client.ConsumerShutdownSignalCallback
 import com.rabbitmq.client.DeliverCallback
 import io.github.kg95.rabbitmq.lib.converter.DefaultConverter
 import kotlinx.coroutines.runBlocking
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -15,11 +15,11 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 
-internal class RabbitMQProducerIT {
+internal class RabbitMqProducerIT {
 
     private lateinit var channel: Channel
     private val messageBuffer: MutableList<ByteArray> = mutableListOf()
-    private val rabbitMQAccess = RabbitMQAccess(
+    private val rabbitmqAccess = RabbitMqAccess(
         "rabbitmq", "rabbitmq", "localhost", 5672
     )
     private val virtualHost: String = "/"
@@ -54,8 +54,8 @@ internal class RabbitMQProducerIT {
 
     @Test
     fun testSendMessages() {
-        val rabbitProducer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, DefaultConverter(), String::class.java,
+        val rabbitProducer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, DefaultConverter(), String::class.java,
             publishCount, publishDelayMillis
         )
         val messages = listOf("message1", "message2", "message3")

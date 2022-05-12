@@ -6,7 +6,7 @@ import com.rabbitmq.client.ConnectionFactory
 import com.rabbitmq.client.MessageProperties
 import com.rabbitmq.client.ReturnListener
 import io.github.kg95.rabbitmq.lib.converter.DefaultConverter
-import io.github.kg95.rabbitmq.lib.exception.RabbitMQException
+import io.github.kg95.rabbitmq.lib.exception.RabbitMqException
 import io.mockk.clearAllMocks
 import io.mockk.every
 import io.mockk.mockk
@@ -14,7 +14,7 @@ import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runBlockingTest
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
@@ -25,9 +25,9 @@ import java.io.IOException
 import java.net.ConnectException
 
 @ExperimentalCoroutinesApi
-class RabbitMQProducerTest {
+class RabbitMqProducerTest {
 
-    private val rabbitMQAccess: RabbitMQAccess = mockk(relaxed = true)
+    private val rabbitmqAccess: RabbitMqAccess = mockk(relaxed = true)
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
     private val converter: DefaultConverter = mockk(relaxed = true)
@@ -49,16 +49,16 @@ class RabbitMQProducerTest {
     fun testInitialize() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 
         verify {
-            anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
-            anyConstructed<ConnectionFactory>().password = rabbitMQAccess.password
-            anyConstructed<ConnectionFactory>().host = rabbitMQAccess.host
-            anyConstructed<ConnectionFactory>().port = rabbitMQAccess.port
+            anyConstructed<ConnectionFactory>().username = rabbitmqAccess.username
+            anyConstructed<ConnectionFactory>().password = rabbitmqAccess.password
+            anyConstructed<ConnectionFactory>().host = rabbitmqAccess.host
+            anyConstructed<ConnectionFactory>().port = rabbitmqAccess.port
             anyConstructed<ConnectionFactory>().virtualHost = virtualHost
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
             anyConstructed<ConnectionFactory>().newConnection()
@@ -70,9 +70,9 @@ class RabbitMQProducerTest {
     @Test
     fun testCreation_connectionError() {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
-        val exception = assertThrows<RabbitMQException> {
-            RabbitMQProducer(
-                rabbitMQAccess, virtualHost, queueName, converter,
+        val exception = assertThrows<RabbitMqException> {
+            RabbitMqProducer(
+                rabbitmqAccess, virtualHost, queueName, converter,
                 type, publishCount, publishDelayMillis
             )
         }
@@ -86,8 +86,8 @@ class RabbitMQProducerTest {
     fun testClose() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        val producer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 
@@ -102,8 +102,8 @@ class RabbitMQProducerTest {
     fun testSendMessages() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        val producer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 
@@ -133,8 +133,8 @@ class RabbitMQProducerTest {
     fun testSendMessages_conversionError() {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        val producer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 
@@ -154,8 +154,8 @@ class RabbitMQProducerTest {
     fun testSendMessages_rabbitMQError() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        val producer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 
@@ -172,7 +172,7 @@ class RabbitMQProducerTest {
             assertThat(response).isInstanceOf(Response.Failure::class.java)
             assertThat(
                 (response as Response.Failure).error
-            ).isInstanceOf(RabbitMQException::class.java)
+            ).isInstanceOf(RabbitMqException::class.java)
         }
     }
 
@@ -180,8 +180,8 @@ class RabbitMQProducerTest {
     fun testSendMessages_reconnect() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        val producer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 
@@ -212,8 +212,8 @@ class RabbitMQProducerTest {
     fun testSendMessage() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        val producer = RabbitMQProducer(
-            rabbitMQAccess, virtualHost, queueName, converter,
+        val producer = RabbitMqProducer(
+            rabbitmqAccess, virtualHost, queueName, converter,
             type, publishCount, publishDelayMillis
         )
 

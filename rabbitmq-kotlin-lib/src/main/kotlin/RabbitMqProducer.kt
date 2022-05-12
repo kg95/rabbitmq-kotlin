@@ -5,12 +5,12 @@ import com.rabbitmq.client.ReturnListener
 import kotlinx.coroutines.delay
 import io.github.kg95.rabbitmq.lib.converter.Converter
 import kotlinx.coroutines.runBlocking
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.Response
-import io.github.kg95.rabbitmq.lib.util.convertToRabbitMQException
+import io.github.kg95.rabbitmq.lib.util.convertToRabbitMqException
 
-class RabbitMQProducer<T: Any> (
-    rabbitMQAccess: RabbitMQAccess,
+class RabbitMqProducer<T: Any> (
+    rabbitmqAccess: RabbitMqAccess,
     virtualHost: String,
     queueName: String,
     private val converter: Converter,
@@ -26,10 +26,10 @@ class RabbitMQProducer<T: Any> (
         }
         try {
             channelProvider = ProducerChannelProvider(
-                rabbitMQAccess, virtualHost, queueName, onReturn
+                rabbitmqAccess, virtualHost, queueName, onReturn
             )
         } catch (e: Throwable) {
-            throw convertToRabbitMQException(e)
+            throw convertToRabbitMqException(e)
         }
     }
 
@@ -75,7 +75,7 @@ class RabbitMQProducer<T: Any> (
             delay(publishAttemptDelayMillis)
         }
         lastException?.let {
-            throw convertToRabbitMQException(it)
+            throw convertToRabbitMqException(it)
         }
     }
 

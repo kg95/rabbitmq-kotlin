@@ -8,7 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.verify
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -18,7 +18,7 @@ import java.io.IOException
 import java.net.ConnectException
 
 internal class ConnectionProviderTest {
-    private val rabbitMQAccess: RabbitMQAccess = mockk(relaxed = true)
+    private val rabbitmqAccess: RabbitMqAccess = mockk(relaxed = true)
     private val virtualHost: String = "/"
     private val connection: Connection = mockk(relaxed = true)
     private val channel: Channel = mockk(relaxed = true)
@@ -40,13 +40,13 @@ internal class ConnectionProviderTest {
     @Test
     fun testInitialization() {
         mockSuccessfulConnection()
-        ConnectionProvider(rabbitMQAccess, virtualHost)
+        ConnectionProvider(rabbitmqAccess, virtualHost)
         verify {
             anyConstructed<ConnectionFactory>().newConnection()
-            anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
-            anyConstructed<ConnectionFactory>().password = rabbitMQAccess.password
-            anyConstructed<ConnectionFactory>().host = rabbitMQAccess.host
-            anyConstructed<ConnectionFactory>().port = rabbitMQAccess.port
+            anyConstructed<ConnectionFactory>().username = rabbitmqAccess.username
+            anyConstructed<ConnectionFactory>().password = rabbitmqAccess.password
+            anyConstructed<ConnectionFactory>().host = rabbitmqAccess.host
+            anyConstructed<ConnectionFactory>().port = rabbitmqAccess.port
             anyConstructed<ConnectionFactory>().virtualHost = virtualHost
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
         }
@@ -56,7 +56,7 @@ internal class ConnectionProviderTest {
     fun testInitialization_connectionError() {
         mockFailedConnection()
         assertThrows<ConnectException> {
-            ConnectionProvider(rabbitMQAccess, virtualHost)
+            ConnectionProvider(rabbitmqAccess, virtualHost)
         }
     }
 
@@ -64,7 +64,7 @@ internal class ConnectionProviderTest {
     fun testCreateChannel() {
         mockSuccessfulConnection()
         val connectionProvider = ConnectionProvider(
-            rabbitMQAccess, virtualHost
+            rabbitmqAccess, virtualHost
         )
         val returnedChannel = connectionProvider.createChannel()
         verify {
@@ -78,7 +78,7 @@ internal class ConnectionProviderTest {
     fun testCreateChannel_error() {
         mockSuccessfulConnection()
         val connectionProvider = ConnectionProvider(
-            rabbitMQAccess, virtualHost
+            rabbitmqAccess, virtualHost
         )
         verify { anyConstructed<ConnectionFactory>().newConnection() }
 
@@ -92,7 +92,7 @@ internal class ConnectionProviderTest {
     fun testClose() {
         mockSuccessfulConnection()
         val connectionProvider = ConnectionProvider(
-            rabbitMQAccess, virtualHost
+            rabbitmqAccess, virtualHost
         )
         verify { anyConstructed<ConnectionFactory>().newConnection() }
 

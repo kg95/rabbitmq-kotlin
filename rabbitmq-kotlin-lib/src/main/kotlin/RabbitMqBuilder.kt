@@ -4,10 +4,10 @@ import io.github.kg95.rabbitmq.lib.converter.Converter
 import io.github.kg95.rabbitmq.lib.converter.DefaultConverter
 import io.github.kg95.rabbitmq.lib.model.ConsumerOptions
 import io.github.kg95.rabbitmq.lib.model.ProducerOptions
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 
-class RabbitMQBuilder(
-    var rabbitMQAccess: RabbitMQAccess = RabbitMQAccess(),
+class RabbitMqBuilder(
+    var rabbitmqAccess: RabbitMqAccess = RabbitMqAccess(),
     var converter: Converter = DefaultConverter(),
     var consumerOptions: ConsumerOptions = ConsumerOptions(),
     var producerOptions: ProducerOptions = ProducerOptions()
@@ -16,9 +16,9 @@ class RabbitMQBuilder(
         virtualHost: String,
         queueName: String,
         type: Class<T>,
-    ): RabbitMQConsumer<T> {
-        return RabbitMQConsumer(
-            rabbitMQAccess,
+    ): RabbitMqConsumer<T> {
+        return RabbitMqConsumer(
+            rabbitmqAccess,
             virtualHost,
             queueName,
             consumerOptions.dispatcher,
@@ -33,9 +33,9 @@ class RabbitMQBuilder(
         virtualHost: String,
         queueName: String,
         type: Class<T>
-    ): RabbitMQProducer<T> {
-        return RabbitMQProducer(
-            rabbitMQAccess,
+    ): RabbitMqProducer<T> {
+        return RabbitMqProducer(
+            rabbitmqAccess,
             virtualHost,
             queueName,
             converter,

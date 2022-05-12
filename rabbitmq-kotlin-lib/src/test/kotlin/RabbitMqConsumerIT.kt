@@ -8,7 +8,7 @@ import io.github.kg95.rabbitmq.lib.converter.JacksonConverter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ObsoleteCoroutinesApi
 import kotlinx.coroutines.runBlocking
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.Response
 import org.assertj.core.api.Assertions.assertThat
 import org.awaitility.kotlin.await
@@ -18,10 +18,10 @@ import org.junit.jupiter.api.Test
 import java.util.concurrent.TimeUnit
 
 @ObsoleteCoroutinesApi
-internal class RabbitMQConsumerIT {
+internal class RabbitMqConsumerIT {
 
     private lateinit var channel: Channel
-    private val rabbitMQAccess = RabbitMQAccess(
+    private val rabbitmqAccess = RabbitMqAccess(
         "rabbitmq", "rabbitmq", "localhost", 5672,
     )
     private val virtualHost: String = "/"
@@ -50,8 +50,8 @@ internal class RabbitMQConsumerIT {
 
     @Test
     fun testCollectNextMessages() {
-        val consumer = RabbitMQConsumer(
-            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
@@ -74,8 +74,8 @@ internal class RabbitMQConsumerIT {
 
     @Test
     fun testCollectNextMessages_invalidMessage() {
-        val consumer = RabbitMQConsumer(
-            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
             JacksonConverter(), Int::class.java, prefetchCount, watchDogIntervalMillis
         )
 
@@ -98,8 +98,8 @@ internal class RabbitMQConsumerIT {
 
     @Test
     fun testCollectNextMessages_partiallyInvalidMessages() {
-        val consumer = RabbitMQConsumer(
-            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
             JacksonConverter(), Int::class.java, prefetchCount, watchDogIntervalMillis
         )
 
@@ -135,8 +135,8 @@ internal class RabbitMQConsumerIT {
 
     @Test
     fun testAckMessage() {
-        val consumer = RabbitMQConsumer(
-            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
@@ -162,8 +162,8 @@ internal class RabbitMQConsumerIT {
 
     @Test
     fun testNackMessage() {
-        val consumer = RabbitMQConsumer(
-            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 
@@ -189,8 +189,8 @@ internal class RabbitMQConsumerIT {
 
     @Test
     fun testClose() {
-        val consumer = RabbitMQConsumer(
-            rabbitMQAccess, virtualHost, queueName, Dispatchers.Default,
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
             DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
         )
 

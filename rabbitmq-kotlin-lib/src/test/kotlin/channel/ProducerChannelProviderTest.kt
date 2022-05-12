@@ -10,7 +10,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.verify
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -20,7 +20,7 @@ import java.net.ConnectException
 
 internal class ProducerChannelProviderTest {
 
-    private val rabbitMQAccess: RabbitMQAccess = mockk(relaxed = true)
+    private val rabbitmqAccess: RabbitMqAccess = mockk(relaxed = true)
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
     private val returnListener: ReturnListener = mockk(relaxed = true)
@@ -40,13 +40,13 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         ProducerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, returnListener
+            rabbitmqAccess, virtualHost, queueName, returnListener
         )
         verify {
-            anyConstructed<ConnectionFactory>().username = rabbitMQAccess.username
-            anyConstructed<ConnectionFactory>().password = rabbitMQAccess.password
-            anyConstructed<ConnectionFactory>().host = rabbitMQAccess.host
-            anyConstructed<ConnectionFactory>().port = rabbitMQAccess.port
+            anyConstructed<ConnectionFactory>().username = rabbitmqAccess.username
+            anyConstructed<ConnectionFactory>().password = rabbitmqAccess.password
+            anyConstructed<ConnectionFactory>().host = rabbitmqAccess.host
+            anyConstructed<ConnectionFactory>().port = rabbitmqAccess.port
             anyConstructed<ConnectionFactory>().virtualHost = virtualHost
             anyConstructed<ConnectionFactory>().isAutomaticRecoveryEnabled = false
             anyConstructed<ConnectionFactory>().newConnection()
@@ -59,7 +59,7 @@ internal class ProducerChannelProviderTest {
     fun testInitialize_connectionError() {
         every { anyConstructed<ConnectionFactory>().newConnection() } throws ConnectException()
         assertThrows<ConnectException> {
-            ProducerChannelProvider(rabbitMQAccess, queueName, virtualHost, returnListener)
+            ProducerChannelProvider(rabbitmqAccess, queueName, virtualHost, returnListener)
         }
     }
 
@@ -68,7 +68,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ProducerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, returnListener
+            rabbitmqAccess, virtualHost, queueName, returnListener
         )
 
         val message = ByteArray(10)
@@ -84,7 +84,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ProducerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, returnListener
+            rabbitmqAccess, virtualHost, queueName, returnListener
         )
 
         every {
@@ -102,7 +102,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ProducerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, returnListener
+            rabbitmqAccess, virtualHost, queueName, returnListener
         )
 
         every { connection.isOpen } returns false
@@ -118,7 +118,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val channelProvider = ProducerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, returnListener
+            rabbitmqAccess, virtualHost, queueName, returnListener
         )
 
         every { connection.isOpen } returns false
@@ -135,7 +135,7 @@ internal class ProducerChannelProviderTest {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
         val channelProvider = ProducerChannelProvider(
-            rabbitMQAccess, virtualHost, queueName, returnListener
+            rabbitmqAccess, virtualHost, queueName, returnListener
         )
 
         channelProvider.close()
@@ -149,7 +149,7 @@ internal class ProducerChannelProviderTest {
     fun testReturnCallBack() {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
-        ProducerChannelProvider(rabbitMQAccess, virtualHost, queueName, returnListener)
+        ProducerChannelProvider(rabbitmqAccess, virtualHost, queueName, returnListener)
         verify {
             channel.addReturnListener(returnListener)
         }

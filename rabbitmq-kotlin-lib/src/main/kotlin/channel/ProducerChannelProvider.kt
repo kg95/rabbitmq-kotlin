@@ -4,14 +4,14 @@ import com.rabbitmq.client.ReturnListener
 import com.rabbitmq.client.Channel
 import com.rabbitmq.client.MessageProperties
 import com.rabbitmq.client.ShutdownListener
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 
 internal class ProducerChannelProvider(
-    rabbitMQAccess: RabbitMQAccess,
+    rabbitmqAccess: RabbitMqAccess,
     virtualHost: String,
     private val queueName: String,
     private val returnListener: ReturnListener
-): AbstractChannelProvider(rabbitMQAccess, virtualHost) {
+): AbstractChannelProvider(rabbitmqAccess, virtualHost) {
 
     init {
         channel = createChannel()

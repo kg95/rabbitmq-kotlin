@@ -13,10 +13,10 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import io.github.kg95.rabbitmq.lib.model.RabbitMQAccess
+import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 
 internal class ConsumerChannelProvider(
-    rabbitMQAccess: RabbitMQAccess,
+    rabbitmqAccess: RabbitMqAccess,
     virtualHost: String,
     private val queueName: String,
     dispatcher: CoroutineDispatcher,
@@ -24,7 +24,7 @@ internal class ConsumerChannelProvider(
     private val shutdownListener: ShutdownListener,
     private val prefetchCount: Int,
     private val watchDogIntervalMillis: Long
-): AbstractChannelProvider(rabbitMQAccess, virtualHost) {
+): AbstractChannelProvider(rabbitmqAccess, virtualHost) {
 
     private var watchDog: Job? = null
     private val watchDogScope = CoroutineScope(dispatcher + SupervisorJob())
