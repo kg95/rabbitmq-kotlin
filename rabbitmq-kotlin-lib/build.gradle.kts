@@ -18,11 +18,9 @@ dependencies {
     //kotlin coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
 
-    //javax annotations
-    implementation("javax.annotation:javax.annotation-api:1.3.2")
-
     //jackson serialization
     implementation("com.fasterxml.jackson.core:jackson-databind:2.12.1")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     //Test
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.2")

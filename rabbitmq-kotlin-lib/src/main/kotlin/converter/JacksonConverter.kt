@@ -1,9 +1,10 @@
 package io.github.kg95.rabbitmq.lib.converter
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 
 class JacksonConverter(
-    private val objectMapper: ObjectMapper = ObjectMapper()
+    private val objectMapper: ObjectMapper = jacksonObjectMapper()
 ): Converter {
 
     override fun <T> toByteArray(value: T, type: Class<T>): ByteArray {
