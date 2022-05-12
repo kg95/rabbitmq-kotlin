@@ -78,6 +78,7 @@ class RabbitMqConsumer<T: Any>(
             return Response.Success(pending)
         }
         return try {
+            channelProvider.recreateChannel()
             channelProvider.ack(pending.deliveryTag)
             Response.Success(pending)
         } catch (e: Throwable) {
@@ -85,6 +86,25 @@ class RabbitMqConsumer<T: Any>(
         }
     }
 
+    fun ackMessages(pending: List<PendingRabbitMqMessage<T>>): Response<List<PendingRabbitMqMessage<T>>>{
+        var operationFailed = false
+        var error: Throwable? = null
+        pending.forEach {
+            if(it.channelVersion == channelVersion) {
+                try {
+                    channelProvider.recreateChannel()
+                    channelProvider.ack(it.deliveryTag)
+                } catch (e: Throwable) {
+                    operationFailed = true
+                    error = e
+                }
+            }
+        }
+        return when(operationFailed) {
+            true -> Response.Failure(error!!)
+            false -> Response.Success(pending)
+        }
+    }
 
     fun nackMessage(pending: PendingRabbitMqMessage<T>): Response<PendingRabbitMqMessage<T>> {
         if(pending.channelVersion != channelVersion) {
@@ -96,6 +116,26 @@ class RabbitMqConsumer<T: Any>(
             Response.Success(pending)
         } catch (e: Throwable) {
             Response.Failure(e)
+        }
+    }
+
+    fun nackMessages(pending: List<PendingRabbitMqMessage<T>>): Response<List<PendingRabbitMqMessage<T>>>{
+        var operationFailed = false
+        var error: Throwable? = null
+        pending.forEach {
+            if(it.channelVersion == channelVersion) {
+                try {
+                    channelProvider.recreateChannel()
+                    channelProvider.nack(it.deliveryTag)
+                } catch (e: Throwable) {
+                    operationFailed = true
+                    error = e
+                }
+            }
+        }
+        return when(operationFailed) {
+            true -> Response.Failure(error!!)
+            false -> Response.Success(pending)
         }
     }
 

@@ -161,6 +161,31 @@ internal class RabbitMqConsumerIT {
     }
 
     @Test
+    fun testAckMessages() {
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
+            DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
+        )
+
+        val messages = listOf("message1", "message2", "message3")
+        for (message in messages) {
+            channel.basicPublish("", "testQueue", true, MessageProperties.PERSISTENT_BASIC, message.toByteArray())
+        }
+
+        runBlocking {
+            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+                (it as Response.Success).value
+            }
+            val response = consumer.ackMessages(returnedMessages)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
+        }
+        consumer.close()
+        await.atMost(5000, TimeUnit.MILLISECONDS).until {
+            channel.messageCount("testQueue") == 0L
+        }
+    }
+
+    @Test
     fun testNackMessage() {
         val consumer = RabbitMqConsumer(
             rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
@@ -180,6 +205,31 @@ internal class RabbitMqConsumerIT {
                 val response = consumer.nackMessage(message)
                 assertThat(response).isInstanceOf(Response.Success::class.java)
             }
+        }
+        consumer.close()
+        await.atMost(5000, TimeUnit.MILLISECONDS).until {
+            channel.messageCount("testQueue") == 3L
+        }
+    }
+
+    @Test
+    fun testNackMessages() {
+        val consumer = RabbitMqConsumer(
+            rabbitmqAccess, virtualHost, queueName, Dispatchers.Default,
+            DefaultConverter(), String::class.java, prefetchCount, watchDogIntervalMillis
+        )
+
+        val messages = listOf("message1", "message2", "message3")
+        for (message in messages) {
+            channel.basicPublish("", "testQueue", true, MessageProperties.PERSISTENT_BASIC, message.toByteArray())
+        }
+
+        runBlocking {
+            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+                (it as Response.Success).value
+            }
+            val response = consumer.nackMessages(returnedMessages)
+            assertThat(response).isInstanceOf(Response.Success::class.java)
         }
         consumer.close()
         await.atMost(5000, TimeUnit.MILLISECONDS).until {
