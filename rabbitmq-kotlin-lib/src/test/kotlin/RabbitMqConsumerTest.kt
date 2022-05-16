@@ -14,11 +14,11 @@ import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.ObsoleteCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineDispatcher
-import kotlinx.coroutines.test.runBlockingTest
 import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.PendingRabbitMqMessage
 import io.github.kg95.rabbitmq.lib.model.Response
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -34,7 +34,7 @@ internal class RabbitMqConsumerTest {
     private val rabbitmqAccess: RabbitMqAccess = mockk(relaxed = true)
     private val virtualHost: String = "/"
     private val queueName: String = "testQueue"
-    private val dispatcher = TestCoroutineDispatcher()
+    private val dispatcher = UnconfinedTestDispatcher()
     private val converter = mockk<DefaultConverter>(relaxed = true)
     private val type = String::class.java
     private val prefetchCount = 1000
@@ -131,7 +131,7 @@ internal class RabbitMqConsumerTest {
         )
 
         val message = PendingRabbitMqMessage("message", 1L, 1L)
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.ackMessage(message)
             assertThat(response).isInstanceOf(Response.Success::class.java)
             assertThat((response as Response.Success).value).isEqualTo(message)
@@ -154,7 +154,7 @@ internal class RabbitMqConsumerTest {
         every { channel.basicAck(any(), any()) } throws IOException()
 
         val message = PendingRabbitMqMessage("message", 1L, 1L)
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.ackMessage(message)
             assertThat(response).isInstanceOf(Response.Failure::class.java)
             assertThat((response as Response.Failure).error).isInstanceOf(IOException::class.java)
@@ -179,7 +179,7 @@ internal class RabbitMqConsumerTest {
             PendingRabbitMqMessage("message1", 1L, 1L),
             PendingRabbitMqMessage("message2", 2L, 1L),
         )
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.ackMessages(messages)
             assertThat(response).isInstanceOf(Response.Success::class.java)
             assertThat((response as Response.Success).value).isEqualTo(messages)
@@ -204,7 +204,7 @@ internal class RabbitMqConsumerTest {
             PendingRabbitMqMessage("message1", 1L, 1L),
             PendingRabbitMqMessage("message2", 2L, 1L),
         )
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.ackMessages(messages)
             assertThat(response).isInstanceOf(Response.Failure::class.java)
             assertThat((response as Response.Failure).error).isInstanceOf(IOException::class.java)
@@ -226,7 +226,7 @@ internal class RabbitMqConsumerTest {
         )
 
         val message = PendingRabbitMqMessage("message", 1L, 1L)
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.nackMessage(message)
             assertThat(response).isInstanceOf(Response.Success::class.java)
             assertThat((response as Response.Success).value).isEqualTo(message)
@@ -248,7 +248,7 @@ internal class RabbitMqConsumerTest {
         every { channel.basicNack(any(), any(), any()) } throws IOException()
 
         val message = PendingRabbitMqMessage("message", 1L, 1L)
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.nackMessage(message)
             assertThat(response).isInstanceOf(Response.Failure::class.java)
             assertThat((response as Response.Failure).error).isInstanceOf(IOException::class.java)
@@ -272,7 +272,7 @@ internal class RabbitMqConsumerTest {
             PendingRabbitMqMessage("message1", 1L, 1L),
             PendingRabbitMqMessage("message2", 2L, 1L),
         )
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.nackMessages(messages)
             assertThat(response).isInstanceOf(Response.Success::class.java)
             assertThat((response as Response.Success).value).isEqualTo(messages)
@@ -297,7 +297,7 @@ internal class RabbitMqConsumerTest {
             PendingRabbitMqMessage("message1", 1L, 1L),
             PendingRabbitMqMessage("message2", 2L, 1L),
         )
-        runBlockingTest {
+        runTest(UnconfinedTestDispatcher()) {
             val response = consumer.nackMessages(messages)
             assertThat(response).isInstanceOf(Response.Failure::class.java)
             assertThat((response as Response.Failure).error).isInstanceOf(IOException::class.java)

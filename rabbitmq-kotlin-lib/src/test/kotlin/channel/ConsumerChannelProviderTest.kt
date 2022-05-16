@@ -11,8 +11,8 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestCoroutineDispatcher
 import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -24,7 +24,7 @@ import java.net.ConnectException
 @ExperimentalCoroutinesApi
 internal class ConsumerChannelProviderTest {
 
-    private val testDispatcher = TestCoroutineDispatcher()
+    private val testDispatcher = UnconfinedTestDispatcher()
     private val testDelivery: DeliverCallback = mockk(relaxed = true)
     private val testShutdown: ShutdownListener = mockk(relaxed = true)
     private val rabbitmqAccess: RabbitMqAccess = mockk(relaxed = true)
@@ -282,7 +282,7 @@ internal class ConsumerChannelProviderTest {
         every { channel.isOpen } returns false
         every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
 
-        testDispatcher.advanceTimeBy(20001)
+        testDispatcher.scheduler.advanceTimeBy(20001)
 
         assertThat(channelProvider.channelIsOpen()).isFalse
         verify(atLeast = 2) { anyConstructed<ConnectionFactory>().newConnection() }
@@ -290,7 +290,7 @@ internal class ConsumerChannelProviderTest {
         val newConnection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(newConnection)
 
-        testDispatcher.advanceTimeBy(20001)
+        testDispatcher.scheduler.advanceTimeBy(20001)
 
         assertThat(channelProvider.channelIsOpen()).isTrue
     }
@@ -308,7 +308,7 @@ internal class ConsumerChannelProviderTest {
         every { channel.isOpen } returns false
         every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
 
-        testDispatcher.advanceTimeBy(20001)
+        testDispatcher.scheduler.advanceTimeBy(20001)
 
         verify(atLeast = 3) {
             anyConstructed<ConnectionFactory>().newConnection()

@@ -13,9 +13,10 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.runBlockingTest
 import io.github.kg95.rabbitmq.lib.model.RabbitMqAccess
 import io.github.kg95.rabbitmq.lib.model.Response
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -99,7 +100,7 @@ class RabbitMqProducerTest {
     }
 
     @Test
-    fun testSendMessages() {
+    fun testSendMessages() = runTest(UnconfinedTestDispatcher()) {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val producer = RabbitMqProducer(
@@ -112,14 +113,12 @@ class RabbitMqProducerTest {
             every { converter.toByteArray(message, type) } returns message.toByteArray()
         }
 
-        runBlockingTest {
-            val response = producer.sendMessages(messages)
-            assertThat(response).isInstanceOf(Response.Success::class.java)
-            val successfulMessages = (response as Response.Success).value
-            assertThat(successfulMessages.size).isEqualTo(3)
-            for (message in successfulMessages) {
-                assertThat(message).isIn(messages)
-            }
+        val response = producer.sendMessages(messages)
+        assertThat(response).isInstanceOf(Response.Success::class.java)
+        val successfulMessages = (response as Response.Success).value
+        assertThat(successfulMessages.size).isEqualTo(3)
+        for (message in successfulMessages) {
+            assertThat(message).isIn(messages)
         }
 
         verify(exactly = 3) {
@@ -130,7 +129,7 @@ class RabbitMqProducerTest {
     }
 
     @Test
-    fun testSendMessages_conversionError() {
+    fun testSendMessages_conversionError() = runTest(UnconfinedTestDispatcher()) {
         val connection = mockNewSuccessfulConnection()
         mockNewSuccessfulChannel(connection)
         val producer = RabbitMqProducer(
@@ -141,17 +140,15 @@ class RabbitMqProducerTest {
         val messages = listOf( "message")
         every { converter.toByteArray(messages.first(), type) } throws IllegalStateException()
 
-        runBlockingTest {
-            val response = producer.sendMessages(messages)
-            assertThat(response).isInstanceOf(Response.Failure::class.java)
-            assertThat(
-                (response as Response.Failure).error
-            ).isInstanceOf(IllegalStateException::class.java)
-        }
+        val response = producer.sendMessages(messages)
+        assertThat(response).isInstanceOf(Response.Failure::class.java)
+        assertThat(
+            (response as Response.Failure).error
+        ).isInstanceOf(IllegalStateException::class.java)
     }
 
     @Test
-    fun testSendMessages_rabbitMQError() {
+    fun testSendMessages_rabbitMQError() = runTest(UnconfinedTestDispatcher()) {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val producer = RabbitMqProducer(
@@ -167,17 +164,15 @@ class RabbitMqProducerTest {
         every { connection.isOpen } returns false
         every { anyConstructed<ConnectionFactory>().newConnection() } throws IOException()
 
-        runBlockingTest {
-            val response = producer.sendMessages(messages)
-            assertThat(response).isInstanceOf(Response.Failure::class.java)
-            assertThat(
-                (response as Response.Failure).error
-            ).isInstanceOf(RabbitMqException::class.java)
-        }
+        val response = producer.sendMessages(messages)
+        assertThat(response).isInstanceOf(Response.Failure::class.java)
+        assertThat(
+            (response as Response.Failure).error
+        ).isInstanceOf(RabbitMqException::class.java)
     }
 
     @Test
-    fun testSendMessages_reconnect() {
+    fun testSendMessages_reconnect() = runTest(UnconfinedTestDispatcher()) {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val producer = RabbitMqProducer(
@@ -193,13 +188,11 @@ class RabbitMqProducerTest {
         val newConnection = mockNewSuccessfulConnection()
         val newChannel = mockNewSuccessfulChannel(newConnection)
 
-        runBlockingTest {
-            val response = producer.sendMessages(messages)
-            assertThat(response).isInstanceOf(Response.Success::class.java)
-            val successfulMessages = (response as Response.Success).value
-            assertThat(successfulMessages.size).isEqualTo(1)
-            assertThat(successfulMessages.first()).isEqualTo(messages.first())
-        }
+        val response = producer.sendMessages(messages)
+        assertThat(response).isInstanceOf(Response.Success::class.java)
+        val successfulMessages = (response as Response.Success).value
+        assertThat(successfulMessages.size).isEqualTo(1)
+        assertThat(successfulMessages.first()).isEqualTo(messages.first())
 
         verify(exactly = 1) {
             newChannel.basicPublish(
@@ -209,7 +202,7 @@ class RabbitMqProducerTest {
     }
 
     @Test
-    fun testSendMessage() {
+    fun testSendMessage() = runTest(UnconfinedTestDispatcher()) {
         val connection = mockNewSuccessfulConnection()
         val channel = mockNewSuccessfulChannel(connection)
         val producer = RabbitMqProducer(
@@ -220,12 +213,10 @@ class RabbitMqProducerTest {
         val message = "message"
         every { converter.toByteArray(message, type) } returns message.toByteArray()
 
-        runBlockingTest {
-            val response = producer.sendMessage(message)
-            assertThat(response).isInstanceOf(Response.Success::class.java)
-            val successfulMessage = (response as Response.Success).value
-            assertThat(successfulMessage).isEqualTo(message)
-        }
+        val response = producer.sendMessage(message)
+        assertThat(response).isInstanceOf(Response.Success::class.java)
+        val successfulMessage = (response as Response.Success).value
+        assertThat(successfulMessage).isEqualTo(message)
 
         verify(exactly = 1) {
             channel.basicPublish(
