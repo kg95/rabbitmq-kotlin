@@ -5,7 +5,9 @@ import java.io.File
 import javax.inject.Inject
 
 open class GeneratorExtension @Inject constructor(project: Project) {
+
     var outputFile: File = project.file("${project.buildDir}/generated/rabbitmq/queueUtils.kt")
+
     var builderConfig: BuilderConfig = BuilderConfig()
     val vhostConfig: MutableList<VirtualHostConfig> = mutableListOf()
     var packageName: String? = null
