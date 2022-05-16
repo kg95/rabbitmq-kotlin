@@ -139,7 +139,7 @@ class RabbitMqConsumer<T: Any>(
         }
     }
 
-    suspend fun collectNextMessages(
+    suspend fun collectMessages(
         timeoutMillis: Long = 1000,
         limit: Int = 100
     ): Response<List<PendingRabbitMqMessage<T>>> {

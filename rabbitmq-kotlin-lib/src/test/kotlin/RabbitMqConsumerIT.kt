@@ -61,7 +61,7 @@ internal class RabbitMqConsumerIT {
         }
 
         runBlocking {
-            val response = consumer.collectNextMessages(1000, 10)
+            val response = consumer.collectMessages(1000, 10)
             assertThat(response).isInstanceOf(Response.Success::class.java)
 
             val returnedMessages = (response as Response.Success).value
@@ -86,7 +86,7 @@ internal class RabbitMqConsumerIT {
         )
 
         runBlocking {
-            val response = consumer.collectNextMessages(1000, 10)
+            val response = consumer.collectMessages(1000, 10)
             assertThat(response).isInstanceOf(Response.Failure::class.java)
         }
 
@@ -115,10 +115,10 @@ internal class RabbitMqConsumerIT {
         )
 
         runBlocking {
-            val responseFailure = consumer.collectNextMessages(1000, 10)
+            val responseFailure = consumer.collectMessages(1000, 10)
             assertThat(responseFailure).isInstanceOf(Response.Failure::class.java)
 
-            val responseSuccess = consumer.collectNextMessages(1000, 10)
+            val responseSuccess = consumer.collectMessages(1000, 10)
             assertThat(responseSuccess).isInstanceOf(Response.Success::class.java)
 
             val pendingList = (responseSuccess as Response.Success).value
@@ -146,7 +146,7 @@ internal class RabbitMqConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+            val returnedMessages = consumer.collectMessages(1000, 10).let {
                 (it as Response.Success).value
             }
             for (message in returnedMessages) {
@@ -173,7 +173,7 @@ internal class RabbitMqConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+            val returnedMessages = consumer.collectMessages(1000, 10).let {
                 (it as Response.Success).value
             }
             val response = consumer.ackMessages(returnedMessages)
@@ -198,7 +198,7 @@ internal class RabbitMqConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+            val returnedMessages = consumer.collectMessages(1000, 10).let {
                 (it as Response.Success).value
             }
             for (message in returnedMessages) {
@@ -225,7 +225,7 @@ internal class RabbitMqConsumerIT {
         }
 
         runBlocking {
-            val returnedMessages = consumer.collectNextMessages(1000, 10).let {
+            val returnedMessages = consumer.collectMessages(1000, 10).let {
                 (it as Response.Success).value
             }
             val response = consumer.nackMessages(returnedMessages)
