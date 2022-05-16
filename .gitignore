@@ -3,4 +3,5 @@
 build/
 rabbitmq-generator-plugin/build
 rabbitmq-kotlin-lib/build
+rabbitmq-kotlin-lib-demo/build
 gradle.properties
